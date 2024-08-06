@@ -197,22 +197,26 @@ def createFlexibleDate(likelyDate:str|None) -> FlexibleDate:
     Returns:
         FlexibleDate: the FlexibleDate object parsed from the input string
     """    
+    # validate input
     if likelyDate is None:
         fd = FlexibleDate(likelyDay=None, likelyMonth=None, likelyYear=None)
         return fd
-    if not isinstance(likelyDate, str):
+    elif not isinstance(likelyDate, str):
         raise ValueError("likelyDate must be str or None")
+    # Defaults
     likelyDay = None
     likelyMonth = None
     likelyYear = None
+    # Overwrite defaults if data is found
     parsedDate, numFields = _getCleanedDateAndNumFields(likelyDate)
-    if numFields == 3:
-        likelyDay = parsedDate.day
-    if numFields >= 2:
-        likelyMonth = parsedDate.month
     if numFields >= 1:
         if parsedDate.year != 9999:
             likelyYear = parsedDate.year
+    if numFields >= 2:
+        likelyMonth = parsedDate.month
+    if numFields == 3:
+        likelyDay = parsedDate.day
+    # Initializing and return the fd
     try:
         fd = FlexibleDate(likelyDay=likelyDay, likelyMonth=likelyMonth, likelyYear=likelyYear)
     except:
