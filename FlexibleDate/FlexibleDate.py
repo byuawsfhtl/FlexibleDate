@@ -153,31 +153,37 @@ def combineFlexibleDates(dates: list[FlexibleDate]) -> FlexibleDate:
 
     Returns:
         FlexibleDate: the combined FlexiblDate that best represents the date of the event.
-    """    
-    def scoreValuesWithConfidence(values: list[Optional[int]]) -> dict[int, float]:
-        filteredValues = [v for v in values if v is not None]
-        if not filteredValues:
-            return {None:1}
-        counter = Counter(filteredValues)
-        totalCount = sum(counter.values())
-        scores = {}
-        for value, count in counter.items():
-            confidence = count / totalCount
-            for otherValue, otherCount in counter.items():
-                if value != otherValue:
-                    confidence += 1.2 * (otherCount / totalCount) / (1 + abs(value - otherValue))
-            scores[value] = confidence
-        return scores
+    """
     allYears = [date.likelyYear for date in dates]
     allMonths = [date.likelyMonth for date in dates]
     allDays = [date.likelyDay for date in dates]
-    yearScores = scoreValuesWithConfidence(allYears)
-    monthScores = scoreValuesWithConfidence(allMonths)
-    dayScores = scoreValuesWithConfidence(allDays)
-    year = max(yearScores, key=yearScores.get)
-    month = max(monthScores, key=monthScores.get)
-    day = max(dayScores, key=dayScores.get)
+    year = _chooseMostReasonableValue(allYears)
+    month = _chooseMostReasonableValue(allMonths)
+    day = _chooseMostReasonableValue(allDays)
     return FlexibleDate(likelyYear=year, likelyMonth=month, likelyDay=day)
+
+def _chooseMostReasonableValue(values: list[Optional[int]]) -> int:
+    """Chooses the best value. Can compromise for a middle value.
+
+    Args:
+        values (list[Optional[int]]): either a list of the years, a list of the months, or a list of the days
+
+    Returns:
+        int: the chosen year, month, or day
+    """        
+    filteredValues = [v for v in values if v is not None]
+    if not filteredValues:
+        return {None:1}
+    counter = Counter(filteredValues)
+    totalCount = sum(counter.values())
+    scores = {}
+    for value, count in counter.items():
+        confidence = count / totalCount
+        for otherValue, otherCount in counter.items():
+            if value != otherValue:
+                confidence += 1.2 * (otherCount / totalCount) / (1 + abs(value - otherValue))
+        scores[value] = confidence
+    return max(scores, key=scores.get)
 
 def createFlexibleDate(likelyDate:str|None) -> FlexibleDate:
     """Parses a string (or None) to create a FlexibleDate object.
