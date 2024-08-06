@@ -186,7 +186,8 @@ def _chooseMostReasonableValue(values: list[Optional[int]]) -> int:
     return max(scores, key=scores.get)
 
 def createFlexibleDate(likelyDate:str|None) -> FlexibleDate:
-    """Parses a string (or None) to create a FlexibleDate object.
+    """Parses a string (or None) to create a FlexibleDate object. Attempts 
+    to parse international format first, then American format, then European.
 
     Args:
         likelyDate (str | None): the input
@@ -237,13 +238,7 @@ def _getCleanedDateAndNumFields(date:str) -> tuple[datetime, int]:
         no day was found in the object.
     """    
     # Simple Cleaning
-    date = unidecode(date)
-    date = date.replace("/"," ")
-    date = date.replace(","," ")
-    date = date.replace("."," ")
-    date = date.replace("\""," ")
-    date = date.replace("-"," ")
-    date = " ".join(date.split())
+    date = _cleanDate(date)
     
     # Fallback values to overwrite
     parsedDate = parse('1-1-0001')
@@ -261,13 +256,8 @@ def _getCleanedDateAndNumFields(date:str) -> tuple[datetime, int]:
     if success:
         return parsedDate, numFields
     
-    # Clearn the data by filtering out words that are not months of the year or ints
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun","Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    date = re.sub(r'[^\w\s]', ' ', date) # Gets rid of anything not letters or numbers
-    date = date.replace('  ', ' ') # No double spaces
-    date = re.sub(r'(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])', ' ', date) # Adds spaces when letters and numbers are next to each other
-    date = re.sub(r'(' + '|'.join(months) + r')', r' \1 ', date, flags=re.IGNORECASE) #Adds space between words and their substrings if the substrings are months
-    date = re.sub(r"\b(?!\d|\b" + "|".join(months) + r"\b)\w+\b", "", date, flags=re.IGNORECASE)
+    # Remove any unnecessary data
+    date = _stripUnwantedCharsFromDate(date)
 
     # Tries again after the removing anything not numbers or months
     try:
@@ -311,6 +301,26 @@ def _getCleanedDateAndNumFields(date:str) -> tuple[datetime, int]:
     # Return no matter what
     return parsedDate, numFields
 
+def _cleanDate(date:str) -> str:
+    date = unidecode(date)
+    date = re.sub('([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]', ' ', date)
+    date = date.replace("/"," ")
+    date = date.replace(","," ")
+    date = date.replace("."," ")
+    date = date.replace("\""," ")
+    date = date.replace("-"," ")
+    date = date.replace("_"," ")
+    date = " ".join(date.split())
+    return date
+
+def _stripUnwantedCharsFromDate(date:str) -> str:
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun","Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    date = re.sub(r'[^\w\s]', ' ', date) # Gets rid of anything not letters or numbers
+    date = date.replace('  ', ' ') # No double spaces
+    date = re.sub(r'(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])', ' ', date) # Adds spaces when letters and numbers are next to each other
+    date = re.sub(r'(' + '|'.join(months) + r')', r' \1 ', date, flags=re.IGNORECASE) #Adds space between words and their substrings if the substrings are months
+    date = re.sub(r"\b(?!\d|\b" + "|".join(months) + r"\b)\w+\b", "", date, flags=re.IGNORECASE)
+    return date
 
 def _parseNumbers(text:str) -> list[tuple[str|None, str|None, str|None]]:
     """Helper function for getCleanDateAndNumFields.
