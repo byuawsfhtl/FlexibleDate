@@ -225,6 +225,8 @@ def createFlexibleDate(likelyDate:str|None) -> FlexibleDate:
     return fd
 
 class AncientDateTime(BaseModel):
+    """Represents an ancient date because datetime objects can't have negative years.
+    """    
     year: int
     month: Optional[None] = None
     day: Optional[None] = None
@@ -427,7 +429,7 @@ def _substituteIthInstance(text:str, pattern:str, replacement:str, i:int) -> str
         text (str): the input full string
         pattern (str): the pattern we will use to find all instances of substring
         replacement (str): the replacement
-        i (int): the specified instance to replace.
+        i (int): the specified instance to replace
 
     Returns:
         str: _description_
