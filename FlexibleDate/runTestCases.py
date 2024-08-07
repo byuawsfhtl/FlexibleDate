@@ -1,7 +1,7 @@
 from FlexibleDate.FlexibleDate import createFlexibleDate
 
 def runTestCases() -> None:
-    """Runs the test cases for FlexibleDate
+    """Runs the test cases for FlexibleDate.
     """    
     inputToExpectedOutput = {
         '2024-08-06': '2024-8-6',
