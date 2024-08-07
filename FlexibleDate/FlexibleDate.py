@@ -451,7 +451,7 @@ def _substituteIthInstance(text:str, pattern:str, replacement:str, i:int) -> str
     return result
 
 def _findAllMatches(string:str, regexPatterns:list) -> list:
-    """Finds all matches of various patterns in a string
+    """Finds all matches of a regex pattern in a string.
 
     Args:
         string (str): the string to search within
