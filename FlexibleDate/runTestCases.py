@@ -59,9 +59,10 @@ def runTestCases():
 
     for input, expectedOutput in inputToExpectedOutput.items():
         actualOutput = createFlexibleDate(input)
-        if f'{actualOutput}' != expectedOutput:
-            print('Actual output and expected output do not match:')
-            print(f'{input = }')
-            print(f'{expectedOutput = }')
-            print(f'actualOutput = {actualOutput}')
-            print()
+        if f'{actualOutput}' == expectedOutput:
+            continue
+        print('Actual output and expected output do not match:')
+        print(f'{input = }')
+        print(f'{expectedOutput = }')
+        print(f'actualOutput = {actualOutput}')
+        print()
