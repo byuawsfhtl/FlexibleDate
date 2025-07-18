@@ -184,19 +184,22 @@ def createFlexibleDateFromFormalDate(formalDate:str) -> FlexibleDate:
         raise ValueError('formalDate must be a string')
     
     try:
-        edtf_obj = parse_edtf(formalDate)
+        # Clean the input - remove '+' signs which aren't standard EDTF
+        cleaned_date = formalDate.replace('+', '')
+        
+        edtf_obj = parse_edtf(cleaned_date)
         
         lower_date = edtf_obj.lower_strict()
         
         likelyYear = lower_date.tm_year if lower_date.tm_year != 9999 else None
-        likelyMonth = lower_date.tm_mon if lower_date.tm_mon != 1 or len(formalDate.split('-')) > 1 else None
-        likelyDay = lower_date.tm_mday if lower_date.tm_mday != 1 or len(formalDate.split('-')) > 2 else None
+        likelyMonth = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_date.split('-')) > 1 else None
+        likelyDay = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_date.split('-')) > 2 else None
         
-        if '/' in formalDate:
-            parts = formalDate.split('/')
+        if '/' in cleaned_date:
+            parts = cleaned_date.split('/')
             if len(parts) == 2:
-                start_part = parts[0].strip('+')
-                end_part = parts[1].strip('+')
+                start_part = parts[0]
+                end_part = parts[1]
                 if len(start_part) == 4 and len(end_part) == 4 and start_part.isdigit() and end_part.isdigit():
                     likelyMonth = None
                     likelyDay = None
