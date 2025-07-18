@@ -4,6 +4,7 @@ from unidecode import unidecode
 from dateutil.parser import parse, ParserError
 from datetime import datetime
 from collections import Counter
+from edtf import parse_edtf
 import re
 
 class FlexibleDate(BaseModel):
@@ -90,58 +91,37 @@ def compareTwoDates(date1:FlexibleDate, date2:FlexibleDate) -> float:
     Returns:
         float: the score
     """    
-    score = 0
+    score = 100
 
-    yearInBoth = (date1.likelyYear is not None) and (date2.likelyYear is not None)
-    monthInBoth = (date1.likelyMonth is not None) and (date2.likelyMonth is not None)
-    dayInBoth = (date1.likelyDay is not None) and (date2.likelyDay is not None)
-    
-    if yearInBoth:
-        difYears = abs(date1.likelyYear - date2.likelyYear)
-        averageDate = (date1.likelyYear + date2.likelyYear) / 2
-        rangesAndMultipliers = [
-            (1980, 10), (1970, 8), (1960, 6.5), (1950, 5), (1940, 4.5), (1930, 4),
-            (1920, 3.5), (1910, 3), (1900, 2.5), (1890, 1), (1850, 0.6),
-            (1800, 0.5), (1700, 0.45), (1600, 0.4), (1500, 0.35), (1400, 0.3),
-            (1300, 0.25), (1200, 0.2), (1100, 0.15), (float('-inf'), 0.1)
-        ]
-        for year, multiplier in rangesAndMultipliers:
-            if averageDate < year:
-                continue
-            score += 20 - difYears * multiplier
-            break
+    if date1.valueOf() and date2.valueOf():
+        date1Values = set([date1.likelyYear, date1.likelyMonth, date1.likelyDay]).difference({None})
+        date2Values = set([date2.likelyYear, date2.likelyMonth, date2.likelyDay]).difference({None})
+        sharedNonNullCount = len(date1Values.intersection(date2Values))
+        
+        weight = 1 / sharedNonNullCount if sharedNonNullCount > 0 else 1
 
-    if monthInBoth:
-        directDif = abs(date1.likelyMonth - date2.likelyMonth)
-        wrapAroundDif = 12 - directDif
-        min(directDif, wrapAroundDif)
-        difMonths = abs(date1.likelyMonth - date2.likelyMonth)
-        if difMonths == 0:
-            score += 5
-        elif difMonths == 1:
-            score += 3
-        elif difMonths == 2:
-            score += 1
-        elif difMonths == 3:
-            pass
-        else:
-            score -= difMonths
+        dayScore = 0
+        monthScore = 0
+        yearScore = 0
+        
 
-    if dayInBoth:
-        directDif = abs(date1.likelyDay - date2.likelyDay)
-        wrapAroundDif = 30.4 - directDif
-        difDays = min(directDif, wrapAroundDif)
-        score += (10 - (difDays * 3)) / 2
+        if date1.likelyDay and date2.likelyDay:
+            maxDiff = 15
+            diff = abs(date1.likelyDay - date2.likelyDay)
+            dayScore = max(0, 1 - diff / maxDiff) * weight
+        
+        if date1.likelyMonth and date2.likelyMonth:
+            maxDiff = 6
+            diff = abs(date1.likelyMonth - date2.likelyMonth)
+            monthScore = max(0, 1 - diff / maxDiff) * weight
 
-    if monthInBoth and yearInBoth:
-        if (difMonths == 0) and (difYears == 0):
-            score += 20
-    if dayInBoth and monthInBoth:
-        if (difDays == 0) and (difMonths == 0):
-            score += 20
-    if dayInBoth and monthInBoth and yearInBoth:
-        if (difDays == 0) and (difMonths == 0) and (difYears == 0):
-            score += 20
+        if date1.likelyYear and date2.likelyYear:
+            maxDiff = 20
+            diff = abs(date1.likelyYear - date2.likelyYear)
+            if diff >= maxDiff:
+                return 0
+            yearScore = max(0, 1 - diff / maxDiff) * weight
+        score = round((dayScore + monthScore + yearScore) * 100)    
 
     return score
 
@@ -184,6 +164,47 @@ def _chooseMostReasonableValue(values: list[Optional[int]]) -> int:
                 confidence += 1.2 * (otherCount / totalCount) / (1 + abs(value - otherValue))
         scores[value] = confidence
     return max(scores, key=scores.get)
+
+def createFlexibleDateFromFormalDate(formalDate:str) -> FlexibleDate:
+    """Creates a FlexibleDate object from a formal date string.
+    
+    Args:
+        formalDate (str): An EDTF (Extended Date/Time Format) string such as:
+            "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
+            "+1910/+1910" (year range)
+            "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
+    
+    Raises:
+        ValueError: raised if input is not a valid EDTF string
+        
+    Returns:
+        FlexibleDate: the FlexibleDate object parsed from the EDTF string
+    """
+    if not isinstance(formalDate, str):
+        raise ValueError('formalDate must be a string')
+    
+    try:
+        edtf_obj = parse_edtf(formalDate)
+        
+        lower_date = edtf_obj.lower_strict()
+        
+        likelyYear = lower_date.tm_year if lower_date.tm_year != 9999 else None
+        likelyMonth = lower_date.tm_mon if lower_date.tm_mon != 1 or len(formalDate.split('-')) > 1 else None
+        likelyDay = lower_date.tm_mday if lower_date.tm_mday != 1 or len(formalDate.split('-')) > 2 else None
+        
+        if '/' in formalDate:
+            parts = formalDate.split('/')
+            if len(parts) == 2:
+                start_part = parts[0].strip('+')
+                end_part = parts[1].strip('+')
+                if len(start_part) == 4 and len(end_part) == 4 and start_part.isdigit() and end_part.isdigit():
+                    likelyMonth = None
+                    likelyDay = None
+        
+        return FlexibleDate(likelyYear=likelyYear, likelyMonth=likelyMonth, likelyDay=likelyDay)
+        
+    except Exception as e:
+        raise ValueError(f'Unable to parse EDTF string "{formalDate}": {str(e)}')
 
 def createFlexibleDate(likelyDate:str|None) -> FlexibleDate:
     """Parses a string (or None) to create a FlexibleDate object. Attempts 
