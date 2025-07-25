@@ -75,9 +75,9 @@ class FlexibleDate(BaseModel):
             str: the string
         """        
         months = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-        return ((str(months[self.likelyMonth]) if self.likelyMonth else "") + 
+        return ((str(self.likelyDay) if self.likelyDay else "") + 
             (" " if self.likelyDay and self.likelyMonth else "") +
-            (str(self.likelyDay) if self.likelyDay else "") +
+            (str(months[self.likelyMonth]) if self.likelyMonth else "") +
             (" " if self.likelyDay and self.likelyYear else "") +
             (str(self.likelyYear) if self.likelyYear else ""))
         
