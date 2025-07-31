@@ -82,6 +82,11 @@ class FlexibleDate(BaseModel):
             (str(self.likelyYear) if self.likelyYear else ""))
         
     def __repr__(self) -> str:
+        """Defines the representation of the object (which is international format).
+
+        Returns:
+            str: the representation
+        """        
         if self.likelyDay:
             return f'{self.likelyYear}-{self.likelyMonth}-{self.likelyDay}'
         elif self.likelyMonth:
@@ -193,22 +198,22 @@ def createFlexibleDateFromFormalDate(formalDate:str) -> FlexibleDate:
     
     try:
         # Clean the input - remove '+' signs which aren't standard EDTF
-        cleaned_date = formalDate.replace('+', '')
+        cleanedDate = formalDate.replace('+', '')
         
-        edtf_obj = parse_edtf(cleaned_date)
+        edtfObj = parse_edtf(cleanedDate)
         
-        lower_date = edtf_obj.lower_strict()
+        lowerDate = edtfObj.lower_strict()
         
-        likelyYear = lower_date.tm_year if lower_date.tm_year != 9999 else None
-        likelyMonth = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_date.split('-')) > 1 else None
-        likelyDay = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_date.split('-')) > 2 else None
+        likelyYear = lowerDate.tm_year if lowerDate.tm_year != 9999 else None
+        likelyMonth = lowerDate.tm_mon if lowerDate.tm_mon != 1 or len(cleanedDate.split('-')) > 1 else None
+        likelyDay = lowerDate.tm_mday if lowerDate.tm_mday != 1 or len(cleanedDate.split('-')) > 2 else None
         
-        if '/' in cleaned_date:
-            parts = cleaned_date.split('/')
+        if '/' in cleanedDate:
+            parts = cleanedDate.split('/')
             if len(parts) == 2:
-                start_part = parts[0]
-                end_part = parts[1]
-                if len(start_part) == 4 and len(end_part) == 4 and start_part.isdigit() and end_part.isdigit():
+                startPart = parts[0]
+                endPart = parts[1]
+                if len(startPart) == 4 and len(endPart) == 4 and startPart.isdigit() and endPart.isdigit():
                     likelyMonth = None
                     likelyDay = None
         
