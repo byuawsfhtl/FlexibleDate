@@ -178,11 +178,11 @@ def _chooseMostReasonableValue(values: list[Optional[int]]) -> int:
         scores[value] = confidence
     return max(scores, key=scores.get)
 
-def createFlexibleDateFromFormalDate(formalDate:str) -> FlexibleDate:
+def createFlexibleDateFromFormalDate(formalDate: str) -> FlexibleDate:
     """Creates a FlexibleDate object from a formal date string.
     
     Args:
-        formalDate (str): An EDTF (Extended Date/Time Format) string such as:
+        formalDate (str): an EDTF (Extended Date/Time Format) string such as:
             "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
             "+1910/+1910" (year range)
             "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
