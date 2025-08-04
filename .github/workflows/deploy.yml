@@ -20,7 +20,7 @@ jobs:
       - name: Update Version
         uses: byuawsfhtl/UpdateVersion@v1.0.4
         with:
-          token: ${{ secrets.RLL_BOT_PERSONAL_ACCESS_TOKEN }}
+          token: ${{ secrets.RLL_BOT_PA_TOKEN }}
 
   build:
     name: Build distribution 📦
