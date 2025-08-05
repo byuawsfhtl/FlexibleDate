@@ -194,7 +194,7 @@ def createFlexibleDateFromFormalDate(formalDate: str) -> FlexibleDate:
         FlexibleDate: the FlexibleDate object parsed from the EDTF string
     """
     if not isinstance(formalDate, str):
-        raise ValueError('formalDate must be a string') # should never happen
+        raise ValueError('formalDate must be a string')
     
     try:
         # Clean the input - remove '+' signs which aren't standard EDTF
