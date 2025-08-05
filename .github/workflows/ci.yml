@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [prd, stg, dev]
+    branches: [prd, dev]
     paths-ignore:
       - "**/README.md"
       - "**/.gitignore"
