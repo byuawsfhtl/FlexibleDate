@@ -6,6 +6,7 @@ from datetime import datetime
 from collections import Counter
 from edtf import parse_edtf
 import re
+import math
 
 class FlexibleDate(BaseModel):
     """Represents a date.
@@ -67,6 +68,10 @@ class FlexibleDate(BaseModel):
         if (v is not None) and (v < 1 or v > 31):
             raise ValueError('likelyDay must be between 1 and 31')
         return v
+    
+    def valueOf(self) -> bool:
+        isNull = lambda x: x is None or isinstance(x, float) and math.isnan(x)
+        return not (isNull(self.likelyYear) and isNull(self.likelyMonth) and isNull(self.likelyDay))
     
     def __str__(self) -> str:
         """Defines the string representation of the object (which is international format).
