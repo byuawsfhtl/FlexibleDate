@@ -21,7 +21,7 @@ jobs:
         uses: byuawsfhtl/UpdateVersion@v1.0.7
         with:
           token: ${{ secrets.RLL_BOT_PA_TOKEN }}
-          versionPath: ${{ github.workspace }}/FlexibleDate/_version.py
+          versionPath: ${{ github.workspace }}/_version.py
 
   build:
     name: Build distribution 📦
