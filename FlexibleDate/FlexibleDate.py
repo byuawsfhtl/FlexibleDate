@@ -134,7 +134,7 @@ def compareTwoDates(date1:FlexibleDate, date2:FlexibleDate) -> float:
             if diff >= maxDiff:
                 return 0
             yearScore = max(0, 1 - diff / maxDiff) * weight
-        score = round((dayScore + monthScore + yearScore) * 100)    
+        score = (dayScore + monthScore + yearScore) / 3
 
     return score
 
