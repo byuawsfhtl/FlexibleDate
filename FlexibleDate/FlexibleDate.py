@@ -118,28 +118,23 @@ def compareTwoDates(date1:FlexibleDate, date2:FlexibleDate) -> float:
         
         weight = 1 / sharedNonNullCount if sharedNonNullCount > 0 else 1
 
-        dayScore = 0
-        monthScore = 0
-        yearScore = 0
-        
+        scores = []
 
         if date1.likelyDay and date2.likelyDay:
             maxDiff = 15
             diff = abs(date1.likelyDay - date2.likelyDay)
-            dayScore = max(0, 1 - diff / maxDiff) * weight
-        
+            scores.append(max(0, 1 - diff / maxDiff) * weight)
         if date1.likelyMonth and date2.likelyMonth:
             maxDiff = 6
             diff = abs(date1.likelyMonth - date2.likelyMonth)
-            monthScore = max(0, 1 - diff / maxDiff) * weight
-
+            scores.append(max(0, 1 - diff / maxDiff) * weight)
         if date1.likelyYear and date2.likelyYear:
             maxDiff = 20
             diff = abs(date1.likelyYear - date2.likelyYear)
             if diff >= maxDiff:
                 return 0
-            yearScore = max(0, 1 - diff / maxDiff) * weight
-        score = (dayScore + monthScore + yearScore) / 3
+            scores.append(max(0, 1 - diff / maxDiff) * weight)
+        score = sum(scores) / len(scores) * 100
 
     return score
 
