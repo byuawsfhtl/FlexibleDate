@@ -70,10 +70,10 @@ class FlexibleDate(BaseModel):
         return v
     
     def valueOf(self) -> bool:
-        """Checks if the date is null.
+        """Checks if the date is not null.
 
         Returns:
-            bool: True if the date is not null, False otherwise
+            bool: true if the date is not null, false otherwise
         """
         isNull = lambda x: x is None or isinstance(x, float) and math.isnan(x)
         return not (isNull(self.likelyYear) and isNull(self.likelyMonth) and isNull(self.likelyDay))
