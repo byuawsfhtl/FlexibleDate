@@ -117,9 +117,13 @@ def compareTwoDates(date1:FlexibleDate, date2:FlexibleDate) -> float:
     score = 100
 
     if date1.valueOf() and date2.valueOf():
-        date1Values = set([date1.likelyYear, date1.likelyMonth, date1.likelyDay]).difference({None})
-        date2Values = set([date2.likelyYear, date2.likelyMonth, date2.likelyDay]).difference({None})
-        sharedNonNullCount = len(date1Values.intersection(date2Values))
+        sharedNonNullCount = 0
+        if date1.likelyYear and date2.likelyYear:
+            sharedNonNullCount += 1
+        if date1.likelyMonth and date2.likelyMonth:
+            sharedNonNullCount += 1
+        if date1.likelyDay and date2.likelyDay:
+            sharedNonNullCount += 1
         
         weight = 1 / sharedNonNullCount if sharedNonNullCount > 0 else 1
 
@@ -139,7 +143,7 @@ def compareTwoDates(date1:FlexibleDate, date2:FlexibleDate) -> float:
             if diff >= maxDiff:
                 return 0
             scores.append(max(0, 1 - diff / maxDiff) * weight)
-        score = sum(scores) / len(scores) * 100
+        score = sum(scores) * 100
 
     return score
 
@@ -160,7 +164,7 @@ def combineFlexibleDates(dates: list[FlexibleDate]) -> FlexibleDate:
     day = _chooseMostReasonableValue(allDays)
     return FlexibleDate(likelyYear=year, likelyMonth=month, likelyDay=day)
 
-def _chooseMostReasonableValue(values: list[Optional[int]]) -> int:
+def _chooseMostReasonableValue(values: list[Optional[int]]) -> int | None:
     """Chooses the best value. Can compromise for a middle value.
 
     Args:
@@ -171,7 +175,7 @@ def _chooseMostReasonableValue(values: list[Optional[int]]) -> int:
     """        
     filteredValues = [v for v in values if v is not None]
     if not filteredValues:
-        return {None:1}
+        return None
     counter = Counter(filteredValues)
     totalCount = sum(counter.values())
     scores = {}
