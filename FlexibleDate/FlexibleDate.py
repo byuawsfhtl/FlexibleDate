@@ -6,6 +6,7 @@ from datetime import datetime
 from collections import Counter
 from edtf import parse_edtf
 import re
+import math
 
 class FlexibleDate(BaseModel):
     """Represents a date.
@@ -68,6 +69,15 @@ class FlexibleDate(BaseModel):
             raise ValueError('likelyDay must be between 1 and 31')
         return v
     
+    def valueOf(self) -> bool:
+        """Checks if the date is not null.
+
+        Returns:
+            bool: true if the date is not null, false otherwise
+        """
+        isNull = lambda x: x is None or isinstance(x, float) and math.isnan(x)
+        return not (isNull(self.likelyYear) and isNull(self.likelyMonth) and isNull(self.likelyDay))
+    
     def __str__(self) -> str:
         """Defines the string representation of the object (which is international format).
 
@@ -107,34 +117,33 @@ def compareTwoDates(date1:FlexibleDate, date2:FlexibleDate) -> float:
     score = 100
 
     if date1.valueOf() and date2.valueOf():
-        date1Values = set([date1.likelyYear, date1.likelyMonth, date1.likelyDay]).difference({None})
-        date2Values = set([date2.likelyYear, date2.likelyMonth, date2.likelyDay]).difference({None})
-        sharedNonNullCount = len(date1Values.intersection(date2Values))
+        sharedNonNullCount = 0
+        if date1.likelyYear and date2.likelyYear:
+            sharedNonNullCount += 1
+        if date1.likelyMonth and date2.likelyMonth:
+            sharedNonNullCount += 1
+        if date1.likelyDay and date2.likelyDay:
+            sharedNonNullCount += 1
         
         weight = 1 / sharedNonNullCount if sharedNonNullCount > 0 else 1
 
-        dayScore = 0
-        monthScore = 0
-        yearScore = 0
-        
+        scores = []
 
         if date1.likelyDay and date2.likelyDay:
             maxDiff = 15
             diff = abs(date1.likelyDay - date2.likelyDay)
-            dayScore = max(0, 1 - diff / maxDiff) * weight
-        
+            scores.append(max(0, 1 - diff / maxDiff) * weight)
         if date1.likelyMonth and date2.likelyMonth:
             maxDiff = 6
             diff = abs(date1.likelyMonth - date2.likelyMonth)
-            monthScore = max(0, 1 - diff / maxDiff) * weight
-
+            scores.append(max(0, 1 - diff / maxDiff) * weight)
         if date1.likelyYear and date2.likelyYear:
             maxDiff = 20
             diff = abs(date1.likelyYear - date2.likelyYear)
             if diff >= maxDiff:
                 return 0
-            yearScore = max(0, 1 - diff / maxDiff) * weight
-        score = round((dayScore + monthScore + yearScore) * 100)    
+            scores.append(max(0, 1 - diff / maxDiff) * weight)
+        score = sum(scores) * 100
 
     return score
 
@@ -155,7 +164,7 @@ def combineFlexibleDates(dates: list[FlexibleDate]) -> FlexibleDate:
     day = _chooseMostReasonableValue(allDays)
     return FlexibleDate(likelyYear=year, likelyMonth=month, likelyDay=day)
 
-def _chooseMostReasonableValue(values: list[Optional[int]]) -> int:
+def _chooseMostReasonableValue(values: list[Optional[int]]) -> int | None:
     """Chooses the best value. Can compromise for a middle value.
 
     Args:
@@ -166,7 +175,7 @@ def _chooseMostReasonableValue(values: list[Optional[int]]) -> int:
     """        
     filteredValues = [v for v in values if v is not None]
     if not filteredValues:
-        return {None:1}
+        return None
     counter = Counter(filteredValues)
     totalCount = sum(counter.values())
     scores = {}
