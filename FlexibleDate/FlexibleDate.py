@@ -98,9 +98,9 @@ class FlexibleDate(BaseModel):
             str: the representation
         """        
         if self.likelyDay:
-            return f'+{self.likelyYear}-{self.likelyMonth}-{self.likelyDay}'
+            return f'+{self.likelyYear}-{"0" if self.likelyMonth < 10 else ""}{self.likelyMonth}-{"0" if self.likelyDay < 10 else ""}{self.likelyDay}'
         elif self.likelyMonth:
-            return f'+{self.likelyYear}-{self.likelyMonth}'
+            return f'+{self.likelyYear}-{"0" if self.likelyMonth < 10 else ""}{self.likelyMonth}'
         else:
             return f'+{self.likelyYear}'
     
