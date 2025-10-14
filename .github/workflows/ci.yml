@@ -22,4 +22,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Standard
-        uses: byuawsfhtl/PythonStandardAction@v1.0.8
+        uses: byuawsfhtl/PythonStandardAction@v1.2.0
+
+  checkTests:
+    name: Test Coverage Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RLL_BOT_PA_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.RLL_BOT_PA_TOKEN }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r FlexibleDate/requirements.txt
+
+      - name: Check Test Coverage
+        uses: byuawsfhtl/TestCoverageAction@v1.0.0
+        with:
+          test_paths: tests/
+          exclude_paths: FlexibleDateTS/, tests/, **/test_*.py
