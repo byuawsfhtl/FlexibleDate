@@ -28,9 +28,9 @@ class AncientDateTime {
 }
 
 export default class FlexibleDate {
-    likelyDay?: number | null;
-    likelyMonth?: number | null;
     likelyYear?: number | null;
+    likelyMonth?: number | null;
+    likelyDay?: number | null;
 
     constructor(likelyDate: string | null);
     constructor(likelyDay: number | null, likelyMonth: number | null, likelyYear: number | null);
@@ -54,51 +54,159 @@ export default class FlexibleDate {
         const hasYear = this.likelyYear !== undefined && !isNaN(this.likelyYear as number) && this.likelyYear !== null;
 
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return (hasMonth ? months[this.likelyMonth!] : "") +
-        (hasMonth && hasDay ? " " : "")  +
-        (hasDay ? this.likelyDay : "") +
-        (hasDay && hasYear ? ", " : "") +
+        return (hasDay ? this.likelyDay : "") +
+        (hasDay && hasMonth ? " " : "") +
+        (hasMonth ? months[this.likelyMonth!] : "") +
+        ((hasDay || hasMonth) && hasYear ? " " : "") +
         (hasYear ? this.likelyYear : "");
     }
 
-    // TODO: Replace with compareTo that takes this.compareTo(date: FlexibleDate)
-    // For now, just date1.compareTwoDates(date1, date2)
-    public compareTwoDates(date1 : FlexibleDate, date2 : FlexibleDate): number {
+    public inspect(): string {
+        let yearConversion = `${this.likelyYear}`;
+
+        while (yearConversion.length < 4) {
+            yearConversion = `0${yearConversion}`;
+        }
+        if (this.likelyDay && this.likelyMonth) {
+            return `+${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}-${this.likelyDay < 10 ? '0' : ''}${this.likelyDay}`;
+        }
+        else if (this.likelyMonth) {
+            return `+${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}`;
+        }
+        else {
+            return `+${yearConversion}`;
+        }
+    }
+
+    public createFlexibleDate(likelyDate : string | null | undefined){
+        if( likelyDate == null || likelyDate == undefined || likelyDate == ""){
+            return new FlexibleDate(null, null, null);
+        }
+        else if(typeof likelyDate != "string"){
+            throw new Error("likelyDate must be a string or null");
+        }
+
+        let likelyDay: number | null = null;
+        let likelyMonth: number | null = null;
+        let likelyYear: number | null = null;
+
+        const  [parsedDate, numFields]  = this.getCleanedDateAndNumFields(likelyDate);
+
+        if (numFields >= 1) {
+            if (parsedDate instanceof AncientDateTime) {
+                likelyYear = parsedDate.getFullYear();
+                likelyMonth = parsedDate.getMonth();
+                likelyDay = parsedDate.getDate();
+            } else {
+                if (parsedDate.getFullYear() !== 9999) {
+                    likelyYear = parsedDate.getFullYear();
+                }
+                if (numFields >= 2) {
+                    likelyMonth = parsedDate.getMonth();
+                }
+                if (numFields === 3) {
+                    likelyDay = parsedDate.getDate();
+                }
+            }
+        }
+    
+        return new FlexibleDate(likelyDay, likelyMonth, likelyYear);
+    }
+
+    /**Creates a FlexibleDate object from a formal date string.
+    *
+    * @param formalDate (str): an EDTF (Extended Date/Time Format) string such as:
+            "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
+            "+1910/+1910" (year range)
+            "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)    
+    * @throws ValueError: raised if input is not a valid EDTF string        
+    * @returns FlexibleDate: the FlexibleDate object parsed from the EDTF string
+    */
+    public createFlexibleDateFromFormalDate(formalDate: string): FlexibleDate {
+
+        if (typeof formalDate !== 'string') {
+            throw new Error('formalDate must be a string') // should never happen
+        }
+        
+        try {
+            // Clean the input - remove '+' signs which aren't standard EDTF
+            const cleanedDate = formalDate.replace(/\+/g, '')
+            
+            const edtfObj = edtf.parse(cleanedDate)
+            
+            // Extract year, month, day from the edtf object
+            // The edtf package returns { type: 'Date', level: 0, values: [year, month-1, day] }
+            // Note: month is 0-indexed in JavaScript, but we want 1-indexed like Python
+            let likelyYear: number | null = null
+            let likelyMonth: number | null = null  
+            let likelyDay: number | null = null
+            
+            if (edtfObj && edtfObj.values && Array.isArray(edtfObj.values)) {
+                const [year, month, day] = edtfObj.values
+                
+                // Handle year (same logic as Python version)
+                likelyYear = (year !== undefined && year !== 9999) ? year : null
+                
+                // Handle month (convert from 0-indexed to 1-indexed, same logic as Python)
+                likelyMonth = (month !== undefined && (month !== 0 || cleanedDate.split('-').length > 1)) ? month + 1 : null
+                
+                // Handle day (same logic as Python version)
+                likelyDay = (day !== undefined && (day !== 1 || cleanedDate.split('-').length > 2)) ? day : null
+            }
+            
+            // Handle date ranges - if it's a year range like "1910/1920", only keep year
+            if (cleanedDate.includes('/')) {
+                const parts = cleanedDate.split('/')
+                if (parts.length === 2) {
+                    const startPart = parts[0]
+                    const endPart = parts[1]
+                    if (startPart.length === 4 && endPart.length === 4 && !isNaN(parseInt(startPart)) && !isNaN(parseInt(endPart))) {
+                        likelyMonth = null
+                        likelyDay = null
+                    }
+                }
+            }
+
+            return new FlexibleDate(likelyYear, likelyMonth, likelyDay)
+        } catch (error) {
+            throw new Error(`Unable to parse EDTF string "${formalDate}": ${error}`)
+        }
+    }
+
+    public compareDates(dateToCompare : FlexibleDate): number {
         let score: number = 100;
 
-        if (date1.valueOf() && date2.valueOf()) {
-            const date1Values: (number | null | undefined)[] = [date1.likelyYear, date1.likelyMonth, date1.likelyDay];
-            const date2Values: (number | null | undefined)[] = [date2.likelyYear, date2.likelyMonth, date2.likelyDay];
-            const sharedNonNullCount: number = date1Values.reduce((count: number, val, index) => 
-                (val !== null && val !== undefined && date2Values[index] !== null && date2Values[index] !== undefined) ? count + 1 : count, 0);
+        if (this.valueOf() && dateToCompare.valueOf()) {
+            const thisDateValues: (number | null | undefined)[] = [this.likelyYear, this.likelyMonth, this.likelyDay];
+            const dateToCompareValues: (number | null | undefined)[] = [dateToCompare.likelyYear, dateToCompare.likelyMonth, dateToCompare.likelyDay];
+            const sharedNonNullCount: number = thisDateValues.reduce((count: number, val, index) => 
+                (val !== null && val !== undefined && dateToCompareValues[index] !== null && dateToCompareValues[index] !== undefined) ? count + 1 : count, 0);
             
             const weight: number = sharedNonNullCount > 0 ? 1 / sharedNonNullCount : 1;
 
-            let dayScore: number = 0;
-            let monthScore: number = 0;
-            let yearScore: number = 0;
+            let allScores: number[] = [];
             
 
-            if (date1.likelyDay && date2.likelyDay) {
+            if (this.likelyDay && dateToCompare.likelyDay) {
                 const maxDiff = 15;
-                const diff = Math.abs(date1.likelyDay - date2.likelyDay);
-                dayScore = Math.max(0, 1 - diff / maxDiff) * weight;
+                const diff = Math.abs(this.likelyDay - dateToCompare.likelyDay);
+                allScores.push(Math.max(0, 1 - diff / maxDiff) * weight);
             }
-            if (date1.likelyMonth && date2.likelyMonth) {
+            if (this.likelyMonth && dateToCompare.likelyMonth) {
                 const maxDiff = 6;
-                const diff = Math.abs(date1.likelyMonth - date2.likelyMonth);
-                monthScore = Math.max(0, 1 - diff / maxDiff) * weight;
+                const diff = Math.abs(this.likelyMonth - dateToCompare.likelyMonth);
+                allScores.push(Math.max(0, 1 - diff / maxDiff) * weight);
             }
-            if (date1.likelyYear && date2.likelyYear) {
+            if (this.likelyYear && dateToCompare.likelyYear) {
                 const maxDiff = 20;
-                const diff = Math.abs(date1.likelyYear - date2.likelyYear);
+                const diff = Math.abs(this.likelyYear - dateToCompare.likelyYear);
                 if (diff >= maxDiff) {
                     return 0;
                 }
-                yearScore = Math.max(0, 1 - diff / maxDiff) * weight;
+                allScores.push(Math.max(0, 1 - diff / maxDiff) * weight);
             }
             
-            score = Math.round((dayScore + monthScore + yearScore) * 100);
+            score = Math.round((allScores.reduce((sum, score) => sum + score, 0)) * 100);
         }
 
         return score;
@@ -308,41 +416,6 @@ export default class FlexibleDate {
         return [parsedDate, numFields];
     }
 
-    public createFlexibleDate(likelyDate : string | null | undefined){
-        if( likelyDate == null || likelyDate == undefined || likelyDate == ""){
-            return new FlexibleDate(null, null, null);
-        }
-        else if(typeof likelyDate != "string"){
-            throw new Error("likelyDate must be a string or null");
-        }
-
-        let likelyDay: number | null = null;
-        let likelyMonth: number | null = null;
-        let likelyYear: number | null = null;
-
-        const  [parsedDate, numFields]  = this.getCleanedDateAndNumFields(likelyDate);
-
-        if (numFields >= 1) {
-            if (parsedDate instanceof AncientDateTime) {
-                likelyYear = parsedDate.getFullYear();
-                likelyMonth = parsedDate.getMonth();
-                likelyDay = parsedDate.getDate();
-            } else {
-                if (parsedDate.getFullYear() !== 9999) {
-                    likelyYear = parsedDate.getFullYear();
-                }
-                if (numFields >= 2) {
-                    likelyMonth = parsedDate.getMonth();
-                }
-                if (numFields === 3) {
-                    likelyDay = parsedDate.getDate();
-                }
-            }
-        }
-    
-        return new FlexibleDate(likelyDay, likelyMonth, likelyYear);
-    }
-
     private cleanDate(dateString: string): string{
         let date = dateString.normalize("NFKD"); // Equivalent to unidecode for basic ASCII conversion
         date = date.toLowerCase().trim();
@@ -401,65 +474,5 @@ export default class FlexibleDate {
         //eslint-disable-next-line
         const isNull = (val: any) => val === null || (typeof val === 'number' && isNaN(val));
         return !(isNull(this.likelyDay) && isNull(this.likelyMonth) && isNull(this.likelyYear));
-    }
-
-    /**Creates a FlexibleDate object from a formal date string.
-    *
-    * @param formalDate (str): an EDTF (Extended Date/Time Format) string such as:
-            "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
-            "+1910/+1910" (year range)
-            "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)    
-    * @throws ValueError: raised if input is not a valid EDTF string        
-    * @returns FlexibleDate: the FlexibleDate object parsed from the EDTF string
-    */
-    public createFlexibleDateFromFormalDate(formalDate: string): FlexibleDate {
-    
-        if (typeof formalDate !== 'string') {
-            throw new Error('formalDate must be a string') // should never happen
-        }
-        
-        try {
-            // Clean the input - remove '+' signs which aren't standard EDTF
-            const cleanedDate = formalDate.replace(/\+/g, '')
-            
-            const edtfObj = edtf.parse(cleanedDate)
-            
-            // Extract year, month, day from the edtf object
-            // The edtf package returns { type: 'Date', level: 0, values: [year, month-1, day] }
-            // Note: month is 0-indexed in JavaScript, but we want 1-indexed like Python
-            let likelyYear: number | null = null
-            let likelyMonth: number | null = null  
-            let likelyDay: number | null = null
-            
-            if (edtfObj && edtfObj.values && Array.isArray(edtfObj.values)) {
-                const [year, month, day] = edtfObj.values
-                
-                // Handle year (same logic as Python version)
-                likelyYear = (year !== undefined && year !== 9999) ? year : null
-                
-                // Handle month (convert from 0-indexed to 1-indexed, same logic as Python)
-                likelyMonth = (month !== undefined && (month !== 0 || cleanedDate.split('-').length > 1)) ? month + 1 : null
-                
-                // Handle day (same logic as Python version)
-                likelyDay = (day !== undefined && (day !== 1 || cleanedDate.split('-').length > 2)) ? day : null
-            }
-            
-            // Handle date ranges - if it's a year range like "1910/1920", only keep year
-            if (cleanedDate.includes('/')) {
-                const parts = cleanedDate.split('/')
-                if (parts.length === 2) {
-                    const startPart = parts[0]
-                    const endPart = parts[1]
-                    if (startPart.length === 4 && endPart.length === 4 && !isNaN(parseInt(startPart)) && !isNaN(parseInt(endPart))) {
-                        likelyMonth = null
-                        likelyDay = null
-                    }
-                }
-            }
-
-            return new FlexibleDate(likelyYear, likelyMonth, likelyDay)
-        } catch (error) {
-            throw new Error(`Unable to parse EDTF string "${formalDate}": ${error}`)
-        }
     }
 }
