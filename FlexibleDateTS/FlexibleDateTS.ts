@@ -102,7 +102,7 @@ export default class FlexibleDate {
                     likelyYear = parsedDate.getFullYear();
                 }
                 if (numFields >= 2) {
-                    likelyMonth = parsedDate.getMonth();
+                    likelyMonth = parsedDate.getMonth() + 1; // Convert from 0-indexed to 1-indexed
                 }
                 if (numFields === 3) {
                     likelyDay = parsedDate.getDate();

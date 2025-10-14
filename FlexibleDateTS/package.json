@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "test": "nyc --reporter=json --reporter=text jest",
+    "test-bridge": "tsc && node dist/test_bridge.js",
+    "coverage": "nyc report --reporter=json"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +19,8 @@
   },
   "devDependencies": {
     "@types/node": "^24.7.2",
+    "nyc": "^17.1.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
 }

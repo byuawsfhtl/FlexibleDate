@@ -97,17 +97,17 @@ class FlexibleDate(BaseModel):
         Returns:
             str: the representation
         """        
-        yearConversion = f'{self.likely_year}'
+        year_conversion = f'{self.likely_year}'
 
-        while (len(yearConversion) < 4):
-            yearConversion = '0' + yearConversion
+        while (len(year_conversion) < 4):
+            year_conversion = '0' + year_conversion
 
         if self.likely_day and self.likely_month:
-            return f'+{yearConversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}-{"0" if self.likely_day < 10 else ""}{self.likely_day}'
+            return f'+{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}-{"0" if self.likely_day < 10 else ""}{self.likely_day}'
         elif self.likely_month:
-            return f'+{yearConversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}'
+            return f'+{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}'
         else:
-            return f'+{yearConversion}'
+            return f'+{year_conversion}'
     
 def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float:
     """Compares two flexible dates and gives the comparison a score.
