@@ -120,6 +120,18 @@ class FlexibleDate {
                 }
             }
         }
+        // Handle month-only cases by checking the gleaned data
+        if (numFields === 0) {
+            const [year, month, day] = this.gleanYearMonthDay(likelyDate);
+            if (month && !year && !day) {
+                // Convert month name to number
+                const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+                const monthIndex = monthNames.indexOf(month.toLowerCase().substring(0, 3));
+                if (monthIndex !== -1) {
+                    likelyMonth = monthIndex + 1;
+                }
+            }
+        }
         return new FlexibleDate(likelyDay, likelyMonth, likelyYear);
     }
     /**Creates a FlexibleDate object from a formal date string.
@@ -146,13 +158,28 @@ class FlexibleDate {
             let likelyMonth = null;
             let likelyDay = null;
             if (edtfObj && edtfObj.values && Array.isArray(edtfObj.values)) {
+                // The edtf npm package returns values in [year, month, day] order
+                // where month is 0-indexed (0=January, 11=December)
                 const [year, month, day] = edtfObj.values;
                 // Handle year (same logic as Python version)
-                likelyYear = (year !== undefined && year !== 9999) ? year : null;
-                // Handle month (convert from 0-indexed to 1-indexed, same logic as Python)
-                likelyMonth = (month !== undefined && (month !== 0 || cleanedDate.split('-').length > 1)) ? month + 1 : null;
+                likelyYear = (year !== undefined && year !== null && year !== 9999) ? year : null;
+                // Handle month (convert from 0-indexed to 1-indexed to match Python)
+                // Only set month if it's explicitly provided in the date string
+                if (month !== undefined && month !== null) {
+                    // Check if month was actually specified in the input
+                    const dateParts = cleanedDate.split('-');
+                    if (dateParts.length > 1) {
+                        likelyMonth = month + 1; // Convert 0-indexed to 1-indexed
+                    }
+                }
                 // Handle day (same logic as Python version)
-                likelyDay = (day !== undefined && (day !== 1 || cleanedDate.split('-').length > 2)) ? day : null;
+                if (day !== undefined && day !== null) {
+                    // Check if day was actually specified in the input
+                    const dateParts = cleanedDate.split('-');
+                    if (dateParts.length > 2) {
+                        likelyDay = day;
+                    }
+                }
             }
             // Handle date ranges - if it's a year range like "1910/1920", only keep year
             if (cleanedDate.includes('/')) {
@@ -293,6 +320,11 @@ class FlexibleDate {
                 }
             }
         }
+        // Handle month-only cases (e.g., "December")
+        const monthOnlyMatches = this.findAllMatches(text, ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+        for (const month of monthOnlyMatches) {
+            acceptableCombos.add([null, month, null]);
+        }
         // Scoring function
         const keyFunc = (t) => [
             t.reduce((sum, x) => sum + (x ? x.length : 0), 0), // Primary ranking: total characters in non-null elements
@@ -356,10 +388,10 @@ class FlexibleDate {
             return [parsedDate, numFields];
         }
         const [year, month, day] = this.gleanYearMonthDay(date);
-        if (year == null) {
+        if (year == null && month == null && day == null) {
             return [parsedDate, numFields];
         }
-        const reconstructedDate = `${year} ${month || ""} ${day || ""}`.trim();
+        const reconstructedDate = `${year || ""} ${month || ""} ${day || ""}`.trim();
         [parsedDate, numFields] = this.parseWithDateUtil(reconstructedDate);
         return [parsedDate, numFields];
     }
