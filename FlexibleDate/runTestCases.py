@@ -1,4 +1,4 @@
-from FlexibleDate.FlexibleDate import createFlexibleDate
+from FlexibleDate.FlexibleDate import create_flexible_date
 
 def runTestCases() -> None:
     """Runs the test cases for FlexibleDate.
@@ -60,7 +60,7 @@ def runTestCases() -> None:
     }
 
     for input, expectedOutput in inputToExpectedOutput.items():
-        actualOutput = createFlexibleDate(input)
+        actualOutput = create_flexible_date(input)
         if f'{actualOutput}' == expectedOutput:
             continue
         print('Actual output and expected output do not match:')

@@ -11,16 +11,16 @@ import math
 class FlexibleDate(BaseModel):
     """Represents a date.
     """
-    likelyYear: Optional[int] = None
-    likelyMonth: Optional[int] = None
-    likelyDay: Optional[int] = None
+    likely_year: Optional[int] = None
+    likely_month: Optional[int] = None
+    likely_day: Optional[int] = None
 
-    @field_validator('likelyYear')
-    def validateLikelyYear(cls, v:int) -> int: 
-        """Validates the likelyYear parameter before object initialization.
+    @field_validator('likely_year')
+    def validate_likely_year(cls, v:int) -> int: 
+        """Validates the likely_year parameter before object initialization.
 
         Args:
-            v (int): the parameter likelyYear in FlexibleDate
+            v (int): the parameter likely_year in FlexibleDate
 
         Raises:
             ValueError: raises if year is too large or small. BC is represented by negatives.
@@ -29,15 +29,15 @@ class FlexibleDate(BaseModel):
             int: the validated parameter 
         """        
         if (v is not None) and (v < -100_000 or v > 100_000):
-            raise ValueError(f'likelyYear must be between -100,000 BC and 100,000 AD')
+            raise ValueError(f'likely_year must be between -100,000 BC and 100,000 AD')
         return v
 
-    @field_validator('likelyMonth')
-    def validateLikelyMonth(cls, v:int) -> int:
-        """Validates the likelyMonth parameter before object initialization.
+    @field_validator('likely_month')
+    def validate_likely_month(cls, v:int) -> int:
+        """Validates the likely_month parameter before object initialization.
 
         Args:
-            v (int): the parameter likelyMonth in FlexibleDate
+            v (int): the parameter likely_month in FlexibleDate
 
         Raises:
             ValueError: raises if month not in 1 through 12
@@ -46,18 +46,18 @@ class FlexibleDate(BaseModel):
             int: the validated parameter
         """
         if (v is not None) and (v < 1 or v > 12):
-            raise ValueError('likelyMonth must be between 1 and 12')
+            raise ValueError('likely_month must be between 1 and 12')
         return v
 
-    @field_validator('likelyDay')
-    def validateLikelyDay(cls, v:int) -> int:
-        """Validates the likelyDay parameter before object initialization.
+    @field_validator('likely_day')
+    def validate_likely_day(cls, v:int) -> int:
+        """Validates the likely_day parameter before object initialization.
 
         Args:
-            v (int): the parameter likelyDay in FlexibleDate
+            v (int): the parameter likely_day in FlexibleDate
 
         Raises:
-            ValueError: raises if month not in 1 through 31. This means you can initialize objects 
+            ValueError: raises if day not in 1 through 31. This means you can initialize objects 
             with illegal dates, such as Feb 31. Initializing using the createFlexibleDate function 
             will not allow this to happen, and will decipher only valid day-month combos, or None, 
             for each of those attributes
@@ -66,17 +66,17 @@ class FlexibleDate(BaseModel):
             int: the validated parameter
         """
         if (v is not None) and (v < 1 or v > 31):
-            raise ValueError('likelyDay must be between 1 and 31')
+            raise ValueError('likely_day must be between 1 and 31')
         return v
     
-    def valueOf(self) -> bool:
+    def __bool__(self) -> bool:
         """Checks if the date is not null.
 
         Returns:
             bool: true if the date is not null, false otherwise
         """
         isNull = lambda x: x is None or isinstance(x, float) and math.isnan(x)
-        return not (isNull(self.likelyYear) and isNull(self.likelyMonth) and isNull(self.likelyDay))
+        return not (isNull(self.likely_year) and isNull(self.likely_month) and isNull(self.likely_day))
     
     def __str__(self) -> str:
         """Defines the string representation of the object (which is international format).
@@ -85,11 +85,11 @@ class FlexibleDate(BaseModel):
             str: the string
         """        
         months = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-        return ((str(self.likelyDay) if self.likelyDay else "") + 
-            (" " if self.likelyDay and self.likelyMonth else "") +
-            (str(months[self.likelyMonth]) if self.likelyMonth else "") +
-            (" " if self.likelyDay and self.likelyYear else "") +
-            (str(self.likelyYear) if self.likelyYear else ""))
+        return ((str(self.likely_day) if self.likely_day else "") + 
+            (" " if self.likely_day and self.likely_month else "") +
+            (str(months[self.likely_month]) if self.likely_month else "") +
+            (" " if self.likely_day and self.likely_year else "") +
+            (str(self.likely_year) if self.likely_year else ""))
         
     def __repr__(self) -> str:
         """Defines the representation of the object (which is international format).
@@ -97,19 +97,19 @@ class FlexibleDate(BaseModel):
         Returns:
             str: the representation
         """        
-        yearConversion = f'{self.likelyYear}'
+        yearConversion = f'{self.likely_year}'
 
         while (len(yearConversion) < 4):
             yearConversion = '0' + yearConversion
 
-        if self.likelyDay and self.likelyMonth:
-            return f'+{yearConversion}-{"0" if self.likelyMonth < 10 else ""}{self.likelyMonth}-{"0" if self.likelyDay < 10 else ""}{self.likelyDay}'
-        elif self.likelyMonth:
-            return f'+{yearConversion}-{"0" if self.likelyMonth < 10 else ""}{self.likelyMonth}'
+        if self.likely_day and self.likely_month:
+            return f'+{yearConversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}-{"0" if self.likely_day < 10 else ""}{self.likely_day}'
+        elif self.likely_month:
+            return f'+{yearConversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}'
         else:
             return f'+{yearConversion}'
     
-def compareTwoDates(date1:FlexibleDate, date2:FlexibleDate) -> float:
+def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float:
     """Compares two flexible dates and gives the comparison a score.
 
     Args:
@@ -121,38 +121,38 @@ def compareTwoDates(date1:FlexibleDate, date2:FlexibleDate) -> float:
     """    
     score = 100
 
-    if date1.valueOf() and date2.valueOf():
-        sharedNonNullCount = 0
-        if date1.likelyYear and date2.likelyYear:
-            sharedNonNullCount += 1
-        if date1.likelyMonth and date2.likelyMonth:
-            sharedNonNullCount += 1
-        if date1.likelyDay and date2.likelyDay:
-            sharedNonNullCount += 1
+    if date1 and date2:
+        shared_non_null_count = 0
+        if date1.likely_year and date2.likely_year:
+            shared_non_null_count += 1
+        if date1.likely_month and date2.likely_month:
+            shared_non_null_count += 1
+        if date1.likely_day and date2.likely_day:
+            shared_non_null_count += 1
         
-        weight = 1 / sharedNonNullCount if sharedNonNullCount > 0 else 1
+        weight = 1 / shared_non_null_count if shared_non_null_count > 0 else 1
 
         scores = []
 
-        if date1.likelyDay and date2.likelyDay:
-            maxDiff = 15
-            diff = abs(date1.likelyDay - date2.likelyDay)
-            scores.append(max(0, 1 - diff / maxDiff) * weight)
-        if date1.likelyMonth and date2.likelyMonth:
-            maxDiff = 6
-            diff = abs(date1.likelyMonth - date2.likelyMonth)
-            scores.append(max(0, 1 - diff / maxDiff) * weight)
-        if date1.likelyYear and date2.likelyYear:
-            maxDiff = 20
-            diff = abs(date1.likelyYear - date2.likelyYear)
-            if diff >= maxDiff:
+        if date1.likely_day and date2.likely_day:
+            max_diff = 15
+            diff = abs(date1.likely_day - date2.likely_day)
+            scores.append(max(0, 1 - diff / max_diff) * weight)
+        if date1.likely_month and date2.likely_month:
+            max_diff = 6
+            diff = abs(date1.likely_month - date2.likely_month)
+            scores.append(max(0, 1 - diff / max_diff) * weight)
+        if date1.likely_year and date2.likely_year:
+            max_diff = 20
+            diff = abs(date1.likely_year - date2.likely_year)
+            if diff >= max_diff:
                 return 0
-            scores.append(max(0, 1 - diff / maxDiff) * weight)
+            scores.append(max(0, 1 - diff / max_diff) * weight)
         score = sum(scores) * 100
 
     return score
 
-def combineFlexibleDates(dates: list[FlexibleDate]) -> FlexibleDate:
+def combine_flexible_dates(dates: list[FlexibleDate]) -> FlexibleDate:
     """Combines multiple flexible dates to find the most accurate representation of the event.
 
     Args:
@@ -161,15 +161,15 @@ def combineFlexibleDates(dates: list[FlexibleDate]) -> FlexibleDate:
     Returns:
         FlexibleDate: the combined FlexiblDate that best represents the date of the event.
     """
-    allYears = [date.likelyYear for date in dates]
-    allMonths = [date.likelyMonth for date in dates]
-    allDays = [date.likelyDay for date in dates]
-    year = _chooseMostReasonableValue(allYears)
-    month = _chooseMostReasonableValue(allMonths)
-    day = _chooseMostReasonableValue(allDays)
-    return FlexibleDate(likelyYear=year, likelyMonth=month, likelyDay=day)
+    all_years = [date.likely_year for date in dates]
+    all_months = [date.likely_month for date in dates]
+    all_days = [date.likely_day for date in dates]
+    year = _choose_most_resonable_value(all_years)
+    month = _choose_most_resonable_value(all_months)
+    day = _choose_most_resonable_value(all_days)
+    return FlexibleDate(likely_year=year, likely_month=month, likely_day=day)
 
-def _chooseMostReasonableValue(values: list[Optional[int]]) -> int | None:
+def _choose_most_resonable_value(values: list[Optional[int]]) -> int | None:
     """Chooses the best value. Can compromise for a middle value.
 
     Args:
@@ -178,25 +178,25 @@ def _chooseMostReasonableValue(values: list[Optional[int]]) -> int | None:
     Returns:
         int: the chosen year, month, or day
     """        
-    filteredValues = [v for v in values if v is not None]
-    if not filteredValues:
+    filtered_values = [v for v in values if v is not None]
+    if not filtered_values:
         return None
-    counter = Counter(filteredValues)
-    totalCount = sum(counter.values())
+    counter = Counter(filtered_values)
+    total_count = sum(counter.values())
     scores = {}
     for value, count in counter.items():
-        confidence = count / totalCount
-        for otherValue, otherCount in counter.items():
-            if value != otherValue:
-                confidence += 1.2 * (otherCount / totalCount) / (1 + abs(value - otherValue))
+        confidence = count / total_count
+        for other_value, other_count in counter.items():
+            if value != other_value:
+                confidence += 1.2 * (other_count / total_count) / (1 + abs(value - other_value))
         scores[value] = confidence
     return max(scores, key=scores.get)
 
-def createFlexibleDateFromFormalDate(formalDate: str) -> FlexibleDate:
+def create_flexible_date_from_formal_date(formal_date: str) -> FlexibleDate:
     """Creates a FlexibleDate object from a formal date string.
     
     Args:
-        formalDate (str): an EDTF (Extended Date/Time Format) string such as:
+        formal_date (str): an EDTF (Extended Date/Time Format) string such as:
             "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
             "+1910/+1910" (year range)
             "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
@@ -207,41 +207,41 @@ def createFlexibleDateFromFormalDate(formalDate: str) -> FlexibleDate:
     Returns:
         FlexibleDate: the FlexibleDate object parsed from the EDTF string
     """
-    if not isinstance(formalDate, str):
-        raise ValueError('formalDate must be a string') # should never happen
+    if not isinstance(formal_date, str):
+        raise ValueError('formal_date must be a string') # should never happen
     
     try:
         # Clean the input - remove '+' signs which aren't standard EDTF
-        cleanedDate = formalDate.replace('+', '')
+        cleaned_date = formal_date.replace('+', '')
         
-        edtfObj = parse_edtf(cleanedDate)
+        edtf_obj = parse_edtf(cleaned_date)
         
-        lowerDate = edtfObj.lower_strict()
+        lower_date = edtf_obj.lower_strict()
         
-        likelyYear = lowerDate.tm_year if lowerDate.tm_year != 9999 else None
-        likelyMonth = lowerDate.tm_mon if lowerDate.tm_mon != 1 or len(cleanedDate.split('-')) > 1 else None
-        likelyDay = lowerDate.tm_mday if lowerDate.tm_mday != 1 or len(cleanedDate.split('-')) > 2 else None
+        likely_year = lower_date.tm_year if lower_date.tm_year != 9999 else None
+        likely_month = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_date.split('-')) > 1 else None
+        likely_day = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_date.split('-')) > 2 else None
         
-        if '/' in cleanedDate:
-            parts = cleanedDate.split('/')
+        if '/' in cleaned_date:
+            parts = cleaned_date.split('/')
             if len(parts) == 2:
-                startPart = parts[0]
-                endPart = parts[1]
-                if len(startPart) == 4 and len(endPart) == 4 and startPart.isdigit() and endPart.isdigit():
-                    likelyMonth = None
-                    likelyDay = None
+                start_part = parts[0]
+                end_part = parts[1]
+                if len(start_part) == 4 and len(end_part) == 4 and start_part.isdigit() and end_part.isdigit():
+                    likely_month = None
+                    likely_day = None
         
-        return FlexibleDate(likelyYear=likelyYear, likelyMonth=likelyMonth, likelyDay=likelyDay)
+        return FlexibleDate(likely_year=likely_year, likely_month=likely_month, likely_day=likely_day)
         
     except Exception as e:
-        raise ValueError(f'Unable to parse EDTF string "{formalDate}": {str(e)}')
+        raise ValueError(f'Unable to parse EDTF string "{formal_date}": {str(e)}')
 
-def createFlexibleDate(likelyDate:str|None) -> FlexibleDate:
+def create_flexible_date(likely_date:str|None) -> FlexibleDate:
     """Parses a string (or None) to create a FlexibleDate object. Attempts 
     to parse international format first, then American format, then European.
 
     Args:
-        likelyDate (str | None): the input
+        likely_date (str | None): the input
 
     Raises:
         ValueError: raised if input not str or None
@@ -250,29 +250,29 @@ def createFlexibleDate(likelyDate:str|None) -> FlexibleDate:
         FlexibleDate: the FlexibleDate object parsed from the input string
     """    
     # validate input
-    if likelyDate is None:
-        fd = FlexibleDate(likelyDay=None, likelyMonth=None, likelyYear=None)
+    if likely_date is None:
+        fd = FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
         return fd
-    elif not isinstance(likelyDate, str):
-        raise ValueError('likelyDate must be str or None')
+    elif not isinstance(likely_date, str):
+        raise ValueError('likely_date must be str or None')
     # Defaults
-    likelyDay = None
-    likelyMonth = None
-    likelyYear = None
+    likely_day = None
+    likely_month = None
+    likely_year = None
     # Overwrite defaults if data is found
-    parsedDate, numFields = _getCleanedDateAndNumFields(likelyDate)
-    if numFields >= 1:
-        if parsedDate.year != 9999:
-            likelyYear = parsedDate.year
-    if numFields >= 2:
-        likelyMonth = parsedDate.month
-    if numFields == 3:
-        likelyDay = parsedDate.day
+    parsed_date, num_fields = _get_cleaned_date_and_num_fields(likely_date)
+    if num_fields >= 1:
+        if parsed_date.year != 9999:
+            likely_year = parsed_date.year
+    if num_fields >= 2:
+        likely_month = parsed_date.month
+    if num_fields == 3:
+        likely_day = parsed_date.day
     # Initializing and return the fd
     try:
-        fd = FlexibleDate(likelyDay=likelyDay, likelyMonth=likelyMonth, likelyYear=likelyYear)
+        fd = FlexibleDate(likely_day=likely_day, likely_month=likely_month, likely_year=likely_year)
     except:
-        fd = FlexibleDate(likelyDay=None, likelyMonth=None, likelyYear=None)
+        fd = FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
     return fd
 
 class AncientDateTime(BaseModel):
@@ -282,7 +282,7 @@ class AncientDateTime(BaseModel):
     month: Optional[None] = None
     day: Optional[None] = None
 
-def _getCleanedDateAndNumFields(date:str) -> tuple[datetime|AncientDateTime, int]:
+def _get_cleaned_date_and_num_fields(date:str) -> tuple[datetime|AncientDateTime, int]:
     """Gets the best approximation of the proper datetime, and the number
     of fields within that datetime object that should actually be considered 
     when creating a FlexibleDate object.
@@ -296,28 +296,28 @@ def _getCleanedDateAndNumFields(date:str) -> tuple[datetime|AncientDateTime, int
         no day was found in the object.
     """    
     # Simple Cleaning
-    date = _cleanDate(date)
+    date = _clean_date(date)
 
     # Check if we are dealing with a date between 9999 BC to 99 AD
     if bool(re.match(r'^-?[0-9]{4}$', date)):
         return AncientDateTime(year=int(date)), 1
     
     # Attempt to parse using dateutil
-    parsedDate, numFields = _parseWithDateutil(date)
-    if numFields != 0:
-        return parsedDate, numFields
+    parsed_date, num_fields = _parse_with_date_util(date)
+    if num_fields != 0:
+        return parsed_date, num_fields
 
     # Glean any year, month, or day we can find
-    year, month, day = gleanYearMonthDay(date)
+    year, month, day = glean_year_month_day(date)
     if year is None:
-        return parsedDate, numFields
+        return parsed_date, num_fields
     
     # Attempt to parse using dateutil using what we gleaned 
     date = f'{year} {month} {day}'.replace('None', '')
-    parsedDate, numFields = _parseWithDateutil(date)
-    return parsedDate, numFields
+    parsed_date, num_fields = _parse_with_date_util(date)
+    return parsed_date, num_fields
 
-def _cleanDate(date:str) -> str:
+def _clean_date(date:str) -> str:
     """Cleans a date string.
 
     Args:
@@ -349,9 +349,9 @@ def _cleanDate(date:str) -> str:
     date = re.sub(r'[^\w\s]', ' ', date)
     date = date.replace('  ', ' ')
     date = re.sub(r'(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])', ' ', date) # Add spaces between letters and numbers to seperate them
-    protectedWords = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'bc']
-    date = re.sub(r'(' + '|'.join(protectedWords) + r')', r' \1 ', date, flags=re.IGNORECASE) # Add spaces between all other substrings and the protected words
-    date = re.sub(r'\b(?!\d|\b' + '|'.join(protectedWords) + r'\b)\w+\b', '', date, flags=re.IGNORECASE) # Remove all substrings that are not protected word or number
+    protected_words = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'bc']
+    date = re.sub(r'(' + '|'.join(protected_words) + r')', r' \1 ', date, flags=re.IGNORECASE) # Add spaces between all other substrings and the protected words
+    date = re.sub(r'\b(?!\d|\b' + '|'.join(protected_words) + r'\b)\w+\b', '', date, flags=re.IGNORECASE) # Remove all substrings that are not protected word or number
     date = ' '.join(date.split())
     if bool(re.match(r'^[0-9]( bc)?$', date)):
         date = f'000{date}'
@@ -365,7 +365,7 @@ def _cleanDate(date:str) -> str:
     date = ' '.join(date.split())
     return date
 
-def _parseWithDateutil(date:str) -> tuple[datetime, int]:
+def _parse_with_date_util(date:str) -> tuple[datetime, int]:
     """Tries to parse with dateutil.
 
     Args:
@@ -374,23 +374,23 @@ def _parseWithDateutil(date:str) -> tuple[datetime, int]:
     Returns:
         tuple[datetime, int]: the parsed date, and the number of useful fields in the parsed date
     """    
-    parsedDate = parse('1-1-0001')
-    numFields = 0
+    parsed_date = parse('1-1-0001')
+    num_fields = 0
     try:
         date = date.strip()
         if bool(re.match(r'^0{0,2}[0-9]{2}$', date)):
             raise ParserError('datetime.parser.parse does not work for years 0000 and 0099')
         if 'bc' in date:
             raise ParserError('datetime.parser.parse does not work for negative years')
-        parsedDate = parse(date, default=datetime(9999, 1, 1))
-        numFields = len(date.split())
-        if parsedDate.year == 9999:
-            numFields += 1
+        parsed_date = parse(date, default=datetime(9999, 1, 1))
+        num_fields = len(date.split())
+        if parsed_date.year == 9999:
+            num_fields += 1
     except ParserError:
         pass
-    return parsedDate, numFields
+    return parsed_date, num_fields
 
-def gleanYearMonthDay(text:str) -> tuple[str|None, str|None, str|None]:
+def glean_year_month_day(text:str) -> tuple[str|None, str|None, str|None]:
     """Helper function for getCleanDateAndNumFields.
 
     Args:
@@ -401,61 +401,61 @@ def gleanYearMonthDay(text:str) -> tuple[str|None, str|None, str|None]:
     """    
 
     # Acceptable combos
-    acceptableCombos = set()
+    acceptable_combos = set()
 
     # Add nothing, in case nothing is found
     combo = (None, None, None)
-    acceptableCombos.add(combo)
+    acceptable_combos.add(combo)
 
-    validYears = [match for match in re.findall(r'[-]?(?=(\d{4}))', text) if int(match) <= datetime.now().year] # overlapping 4 digits between 1000 and current year
-    validYearsAndInstances = _getStringsAndInstances(validYears)
-    for year, i in validYearsAndInstances:
+    valid_years = [match for match in re.findall(r'[-]?(?=(\d{4}))', text) if int(match) <= datetime.now().year] # overlapping 4 digits between 1000 and current year
+    valid_years_and_instances = _get_strings_and_instances(valid_years)
+    for year, i in valid_years_and_instances:
         # Add the acceptable year in case no valid months are found
         combo = (year, None, None)
-        acceptableCombos.add(combo)
+        acceptable_combos.add(combo)
 
         # Find valid months (after removing year)
-        textA = _substituteIthInstance(text, year, ' ', i).strip().replace('  ', ' ')
-        validMonths = _findAllMatches(textA, ['[1-9]', '0[1-9]', '1[0-9]', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
-        validMonthsAndInstances = _getStringsAndInstances(validMonths)
+        text_a = _substitute_ith_isntance(text, year, ' ', i).strip().replace('  ', ' ')
+        valid_months = _find_all_matches(text_a, ['[1-9]', '0[1-9]', '1[0-9]', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+        valid_months_and_instances = _get_strings_and_instances(valid_months)
 
         # Loop over valid months
-        for month, i in validMonthsAndInstances:
+        for month, i in valid_months_and_instances:
             # Add the acceptable year month combo in case no valid days are found
             combo = (year, month, None)
-            acceptableCombos.add(combo)
+            acceptable_combos.add(combo)
 
             # Find valid days (after removing days)
-            textB = _substituteIthInstance(textA, month, ' ', i).strip().replace('  ', ' ')
-            validDays = _findAllMatches(textB, ['[1-9]', '0[1-9]', '1[0-9]', '2[0-9]', '3[01]'])
-            for day in validDays:
+            text_b = _substitute_ith_isntance(text_a, month, ' ', i).strip().replace('  ', ' ')
+            valid_days = _find_all_matches(text_b, ['[1-9]', '0[1-9]', '1[0-9]', '2[0-9]', '3[01]'])
+            for day in valid_days:
                 # Append date combo if valid
                 combo = (year, month, day)
                 try:
                     parse(f'{year}-{month}-{day}')
-                    acceptableCombos.add(combo)
+                    acceptable_combos.add(combo)
                 except ParserError:
                     pass
-    keyFunc = lambda t: (
+    key_func = lambda t: (
         sum(len(str(x)) for x in t if x is not None),  # Primary ranking: total characters in non-None elements
         sum(1 for x in t if x is not None)             # Secondary ranking: count of non-None elements
     )
-    scores:dict[tuple[str|None, str|None, str|None], tuple[int, int]] = {option: keyFunc(option) for option in acceptableCombos}
-    maxScore = max(scores.values())
-    bestOptions = [option for option, score in scores.items() if score == maxScore]
-    for i in range(len(bestOptions)):
-        for j in range(i + 1, len(bestOptions)):
-            yearA, monthA, dayA = bestOptions[i]
-            yearB, monthB, dayB = bestOptions[j]
-            yearA = yearA if yearA == yearB else None
-            if (monthA != monthB) or (dayA != dayB):
-                monthA = None
-                dayA = None
-            bestOptions[i] = (yearA, monthA, dayA)
-            bestOptions[j] = (yearA, monthA, dayA)
-    return bestOptions[0]
+    scores:dict[tuple[str|None, str|None, str|None], tuple[int, int]] = {option: key_func(option) for option in acceptable_combos}
+    max_score = max(scores.values())
+    best_options = [option for option, score in scores.items() if score == max_score]
+    for i in range(len(best_options)):
+        for j in range(i + 1, len(best_options)):
+            year_a, month_a, day_a = best_options[i]
+            year_b, month_b, day_b = best_options[j]
+            year_a = year_a if year_a == year_b else None
+            if (month_a != month_b) or (day_a != day_b):
+                month_a = None
+                day_a = None
+            best_options[i] = (year_a, month_a, day_a)
+            best_options[j] = (year_a, month_a, day_a)
+    return best_options[0]
 
-def _getStringsAndInstances(stringList:list[str]) -> list[tuple[str, int]]:
+def _get_strings_and_instances(strings:list[str]) -> list[tuple[str, int]]:
     """Gets the strings and instances.
 
     Args:
@@ -464,16 +464,16 @@ def _getStringsAndInstances(stringList:list[str]) -> list[tuple[str, int]]:
     Returns:
         list[tuple[str, int]]: the list of strings and instances
     """        
-    countDict = {}
+    count_dict = {}
     result = []
-    for string in stringList:
-        if countDict.get(string) is None:
-            countDict[string] = 0
-        countDict[string] += 1
-        result.append((string, countDict[string] - 1))
+    for string in strings:
+        if count_dict.get(string) is None:
+            count_dict[string] = 0
+        count_dict[string] += 1
+        result.append((string, count_dict[string] - 1))
     return result
 
-def _substituteIthInstance(text:str, pattern:str, replacement:str, i:int) -> str:
+def _substitute_ith_isntance(text:str, pattern:str, replacement:str, i:int) -> str:
     """Replaces the ith instance of a substring and returns the full string.
 
     Args:
@@ -485,7 +485,7 @@ def _substituteIthInstance(text:str, pattern:str, replacement:str, i:int) -> str
     Returns:
         str: _description_
     """        
-    def _replaceCount(match:re.Match) -> str:
+    def _replace_count(match:re.Match) -> str:
         """Finds the string to be replaced.
 
         Args:
@@ -500,20 +500,20 @@ def _substituteIthInstance(text:str, pattern:str, replacement:str, i:int) -> str
             return replacement
         i -= 1
         return match.group(0)
-    result = re.sub(pattern, _replaceCount, text)
+    result = re.sub(pattern, _replace_count, text)
     return result
 
-def _findAllMatches(string:str, regexPatterns:list) -> list:
+def _find_all_matches(string:str, regex_patterns:list) -> list:
     """Finds all matches of a regex pattern in a string.
 
     Args:
         string (str): the string to search within
-        regexPatterns (list): the list of regex patterns
+        regex_patterns (list): the list of regex patterns
 
     Returns:
         list: the list of matches
     """        
-    allMatches = []
-    for pattern in regexPatterns:
-        allMatches += re.findall(pattern, string, flags=re.IGNORECASE)
-    return allMatches
+    all_matches = []
+    for pattern in regex_patterns:
+        all_matches += re.findall(pattern, string, flags=re.IGNORECASE)
+    return all_matches
