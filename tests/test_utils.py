@@ -2,8 +2,10 @@ import json
 import subprocess
 import sys
 import os
+import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
+from unittest.mock import patch, MagicMock
 
 # Add the FlexibleDate module to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'FlexibleDate'))
@@ -11,91 +13,160 @@ from FlexibleDate import FlexibleDate, create_flexible_date, create_flexible_dat
 
 
 class FlexibleDateTestRunner:
-    """Test runner that can execute tests against both Python and TypeScript implementations."""
+    """Self-contained test runner for dual-language FlexibleDate testing."""
+    
+    _environment_initialized = False
+    _setup_lock = threading.Lock()
     
     def __init__(self):
+        """Initialize the test runner with automatic environment setup."""
         self.root_dir = Path(__file__).parent.parent
         self.ts_bridge_path = self.root_dir / "FlexibleDateTS" / "dist" / "test_bridge.js"
-        self.test_config_path = self.root_dir / "tests" / "test_config.json"
         
-        # Verify TypeScript bridge exists
+        with FlexibleDateTestRunner._setup_lock:
+            if not FlexibleDateTestRunner._environment_initialized:
+                self._setup_environment()
+                FlexibleDateTestRunner._environment_initialized = True
+    
+    def _setup_environment(self):
+        """One-time setup of Node.js environment and TypeScript compilation."""
+        print("Setting up dual-language testing environment...")
+        
+        # Check if TypeScript bridge exists
         if not self.ts_bridge_path.exists():
-            raise FileNotFoundError(f"TypeScript bridge not found at {self.ts_bridge_path}")
-    
-    def load_test_cases(self, test_category: str, test_group: str = None) -> List[Dict[str, Any]]:
-        """Load test cases from the JSON configuration file."""
-        if not self.test_config_path.exists():
-            return []
-        
-        with open(self.test_config_path, 'r') as f:
-            config = json.load(f)
-        
-        if test_category not in config:
-            return []
-        
-        if test_group is None:
-            # Return all test cases in the category
-            all_cases = []
-            for group in config[test_category].values():
-                all_cases.extend(group)
-            return all_cases
+            # Only check Node.js if we need to compile
+            if not self._check_nodejs():
+                raise EnvironmentError(
+                    "Node.js not found and TypeScript bridge not compiled. Install Node.js to run dual-language tests.\n"
+                    "Download from: https://nodejs.org/"
+                )
+            self._compile_typescript()
         else:
-            return config[test_category].get(test_group, [])
+            print("TypeScript bridge found, skipping compilation.")
+        
+        print("Environment setup complete.")
     
-    def serialize_flexible_date(self, fd: FlexibleDate) -> Dict[str, Any]:
-        """Convert a Python FlexibleDate to a serializable dictionary."""
-        return {
-            "likelyYear": fd.likely_year,
-            "likelyMonth": fd.likely_month,
-            "likelyDay": fd.likely_day
-        }
-    
-    def deserialize_flexible_date(self, data: Dict[str, Any]) -> FlexibleDate:
-        """Convert a dictionary back to a Python FlexibleDate."""
-        return FlexibleDate(
-            likely_year=data.get("likelyYear"),
-            likely_month=data.get("likelyMonth"),
-            likely_day=data.get("likelyDay")
-        )
-    
-    def run_python_test(self, method: str, *args) -> Any:
-        """Execute a test using the Python implementation."""
+    def _check_nodejs(self) -> bool:
+        """Check if Node.js is available."""
         try:
-            if method == "createFlexibleDate":
-                return self.serialize_flexible_date(create_flexible_date(args[0]))
-            
-            elif method == "createFlexibleDateFromFormalDate":
-                return self.serialize_flexible_date(create_flexible_date_from_formal_date(args[0]))
-            
-            elif method == "compareTwoDates":
-                fd1 = self.deserialize_flexible_date(args[0])
-                fd2 = self.deserialize_flexible_date(args[1])
-                return compare_two_dates(fd1, fd2)
-            
-            elif method == "combineFlexibleDates":
-                dates = [self.deserialize_flexible_date(d) for d in args[0]]
-                return self.serialize_flexible_date(combine_flexible_dates(dates))
-            
-            elif method == "toString":
-                fd = self.deserialize_flexible_date(args[0])
-                return str(fd)
-            
-            elif method == "valueOf":
-                fd = self.deserialize_flexible_date(args[0])
-                return fd.valueOf()
-            
-            else:
-                raise ValueError(f"Unknown method: {method}")
-                
-        except Exception as e:
-            raise RuntimeError(f"Python test failed: {str(e)}")
+            result = subprocess.run(['node', '--version'], 
+                                  capture_output=True, text=True)
+            return result.returncode == 0
+        except FileNotFoundError:
+            return False
     
-    def run_typescript_test(self, method: str, *args) -> Any:
-        """Execute a test using the TypeScript implementation via subprocess."""
+    def _check_typescript_compiled(self) -> bool:
+        """Check if TypeScript bridge is compiled and up-to-date."""
+        ts_source = self.root_dir / "FlexibleDateTS" / "test_bridge.ts"
+        js_output = self.ts_bridge_path
+        
+        if not js_output.exists():
+            return False
+        
+        # Check if source is newer than compiled output
+        if ts_source.exists() and ts_source.stat().st_mtime > js_output.stat().st_mtime:
+            return False
+        
+        return True
+    
+    def _compile_typescript(self):
+        """Compile TypeScript code."""
+        ts_dir = self.root_dir / "FlexibleDateTS"
+        
+        try:
+            print("Installing TypeScript dependencies...")
+            result = subprocess.run(['npm', 'ci'], 
+                                  cwd=str(ts_dir), 
+                                  capture_output=True, text=True)
+            if result.returncode != 0:
+                raise RuntimeError(f"Failed to install npm dependencies: {result.stderr}")
+            
+            print("Compiling TypeScript...")
+            result = subprocess.run(['npm', 'run', 'build'], 
+                                  cwd=str(ts_dir), 
+                                  capture_output=True, text=True)
+            if result.returncode != 0:
+                raise RuntimeError(f"Failed to compile TypeScript: {result.stderr}")
+                
+        except FileNotFoundError:
+            raise EnvironmentError(
+                "npm command not found. Please ensure Node.js and npm are installed and in your PATH.\n"
+                "Download from: https://nodejs.org/\n"
+                "After installation, restart your terminal/IDE and try again."
+            )
+    
+    def run_dual_test(self, python_function: str, ts_function: str, test_data: Dict[str, Any]) -> tuple[Any, Any]:
+        """
+        Run a test against both Python and TypeScript implementations.
+        
+        Args:
+            python_function: Name of the Python function to test
+            ts_function: Name of the TypeScript function to test
+            test_data: Dictionary containing 'input', 'expected', and optional 'mocks'
+        
+        Returns:
+            Tuple of (python_result, typescript_result)
+        """
+        input_data = test_data["input"]
+        mocks = test_data.get("mocks", {})
+        
+        # Run Python function with mocking
+        py_result = self._call_python_function_with_mocks(python_function, input_data, mocks.get("python", {}))
+        
+        # Run TypeScript function with mocking
+        ts_result = self._call_typescript_function_with_mocks(ts_function, input_data, mocks.get("typescript", {}))
+        
+        return py_result, ts_result
+    
+    def _call_python_function_with_mocks(self, function_name: str, input_data: Any, mocks: Dict[str, Any]) -> Any:
+        """Call a Python function with optional mocking."""
+        try:
+            # Apply mocks if provided
+            mock_contexts = []
+            for mock_target, mock_value in mocks.items():
+                mock_contexts.append(patch(mock_target, return_value=mock_value))
+            
+            # Enter all mock contexts
+            for mock_context in mock_contexts:
+                mock_context.__enter__()
+            
+            try:
+                # Call the appropriate function
+                if function_name == "create_flexible_date":
+                    result = create_flexible_date(input_data)
+                elif function_name == "create_flexible_date_from_formal_date":
+                    result = create_flexible_date_from_formal_date(input_data)
+                elif function_name == "compare_two_dates":
+                    fd1 = self._deserialize_flexible_date(input_data[0])
+                    fd2 = self._deserialize_flexible_date(input_data[1])
+                    result = compare_two_dates(fd1, fd2)
+                elif function_name == "combine_flexible_dates":
+                    dates = [self._deserialize_flexible_date(d) for d in input_data]
+                    result = combine_flexible_dates(dates)
+                else:
+                    raise ValueError(f"Unknown Python function: {function_name}")
+                
+                # Serialize the result for comparison
+                if isinstance(result, FlexibleDate):
+                    return self._serialize_flexible_date(result)
+                else:
+                    return result
+                    
+            finally:
+                # Exit all mock contexts
+                for mock_context in reversed(mock_contexts):
+                    mock_context.__exit__(None, None, None)
+                    
+        except Exception as e:
+            raise RuntimeError(f"Python function {function_name} failed: {str(e)}")
+    
+    def _call_typescript_function_with_mocks(self, function_name: str, input_data: Any, mocks: Dict[str, Any]) -> Any:
+        """Call a TypeScript function via subprocess with optional mocking."""
         try:
             request = {
-                "method": method,
-                "args": list(args)
+                "method": function_name,
+                "args": [input_data] if not isinstance(input_data, list) else input_data,
+                "mocks": mocks
             }
             
             # Call the TypeScript bridge
@@ -112,56 +183,27 @@ class FlexibleDateTestRunner:
             response = json.loads(result.stdout)
             
             if not response.get("success", False):
-                raise RuntimeError(f"TypeScript test failed: {response.get('error', 'Unknown error')}")
+                raise RuntimeError(f"TypeScript function failed: {response.get('error', 'Unknown error')}")
             
             return response["result"]
             
         except json.JSONDecodeError as e:
             raise RuntimeError(f"Failed to parse TypeScript response: {str(e)}")
         except Exception as e:
-            raise RuntimeError(f"TypeScript test failed: {str(e)}")
+            raise RuntimeError(f"TypeScript function {function_name} failed: {str(e)}")
     
-    def compare_results(self, python_result: Any, typescript_result: Any, tolerance: float = 1e-10) -> bool:
-        """Compare results from Python and TypeScript implementations."""
-        if type(python_result) != type(typescript_result):
-            return False
-        
-        if isinstance(python_result, (int, float)) and isinstance(typescript_result, (int, float)):
-            # For numeric results, use tolerance comparison
-            return abs(python_result - typescript_result) <= tolerance
-        
-        elif isinstance(python_result, dict) and isinstance(typescript_result, dict):
-            # For FlexibleDate objects (serialized as dicts)
-            return (
-                python_result.get("likelyYear") == typescript_result.get("likelyYear") and
-                python_result.get("likelyMonth") == typescript_result.get("likelyMonth") and
-                python_result.get("likelyDay") == typescript_result.get("likelyDay")
-            )
-        
-        else:
-            # For other types (strings, booleans, etc.)
-            return python_result == typescript_result
+    def _serialize_flexible_date(self, fd: FlexibleDate) -> Dict[str, Any]:
+        """Convert a Python FlexibleDate to a serializable dictionary."""
+        return {
+            "likelyYear": fd.likely_year,
+            "likelyMonth": fd.likely_month,
+            "likelyDay": fd.likely_day
+        }
     
-    def run_dual_test(self, method: str, *args, expected: Any = None) -> bool:
-        """Run a test against both implementations and compare results."""
-        python_result = self.run_python_test(method, *args)
-        typescript_result = self.run_typescript_test(method, *args)
-        
-        # Compare implementations
-        if not self.compare_results(python_result, typescript_result):
-            raise AssertionError(
-                f"Implementation mismatch for {method}:\n"
-                f"Python: {python_result}\n"
-                f"TypeScript: {typescript_result}"
-            )
-        
-        # Check expected result if provided
-        if expected is not None:
-            if not self.compare_results(python_result, expected):
-                raise AssertionError(
-                    f"Result mismatch for {method}:\n"
-                    f"Expected: {expected}\n"
-                    f"Got: {python_result}"
-                )
-        
-        return True
+    def _deserialize_flexible_date(self, data: Dict[str, Any]) -> FlexibleDate:
+        """Convert a dictionary back to a Python FlexibleDate."""
+        return FlexibleDate(
+            likely_year=data.get("likelyYear"),
+            likely_month=data.get("likelyMonth"),
+            likely_day=data.get("likelyDay")
+        )

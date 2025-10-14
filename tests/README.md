@@ -1,157 +1,100 @@
-# FlexibleDate Dual-Language Testing Framework
+# Self-Contained Dual-Language Testing Framework
 
-This testing framework ensures that both Python and TypeScript implementations of FlexibleDate behave identically and maintain coverage parity.
+This testing framework automatically tests both Python and TypeScript implementations of FlexibleDate to ensure they behave identically.
 
-## Architecture
+## Key Features
 
-The framework uses a **subprocess-based approach** where Python tests call the TypeScript implementation via a Node.js bridge, comparing results to ensure consistency.
+- **Self-contained setup** - Automatically handles Node.js environment and TypeScript compilation
+- **Dual-language testing** - Every test runs against both implementations simultaneously
+- **Coverage-aware** - Python code execution is measured by coverage tools
+- **Parity enforcement** - Tests fail if implementations return different results
+- **Mocking support** - Can mock dependencies in both Python and TypeScript environments
 
-### Core Components
+## Usage
 
-1. **`test_utils.py`** - Cross-language test utilities and runner
-2. **`test_config.json`** - Centralized test case definitions
-3. **`FlexibleDateTS/test_bridge.ts`** - TypeScript bridge for cross-language testing
-4. **Individual test files** - Test both implementations simultaneously
-5. **`test_python_and_ts_work_the_same.py`** - Coverage and behavioral parity tests
+Simply run pytest as normal:
 
-## Running Tests
-
-### Quick Start
 ```bash
-# Run all tests with coverage
-python run_tests.py
+# Run all tests
+pytest tests/
 
-# Run tests without coverage
-python run_tests.py --no-coverage
+# Run specific test
+pytest tests/test_create_flexible_date.py -v
 
-# Run verbose tests
-python run_tests.py --verbose
-```
-
-### Specific Test Categories
-```bash
-# Test date creation
-python run_tests.py --category create
-
-# Test EDTF parsing
-python run_tests.py --category formal
-
-# Test date comparison
-python run_tests.py --category compare
-
-# Test date combination
-python run_tests.py --category combine
-
-# Test implementation parity
-python run_tests.py --category parity
-```
-
-### Setup Only
-```bash
-# Just compile TypeScript and verify environment
-python run_tests.py --setup-only
+# Run with coverage (works with TestCoverageAction)
+pytest tests/ --cov=FlexibleDate --cov-report=term-missing
 ```
 
 ## Test Structure
 
-### Individual Test Files
-Each test file tests both implementations:
+Each test uses the `FlexibleDateTestRunner` with this pattern:
 
-- **`test_create_flexible_date.py`** - Date creation from strings
-- **`test_create_flexible_date_from_formal_date.py`** - EDTF format parsing
-- **`test_compare_two_dates.py`** - Date comparison functionality
-- **`test_combine_flexible_dates.py`** - Date combination logic
+```python
+from test_utils import FlexibleDateTestRunner
 
-### Parity Tests
-**`test_python_and_ts_work_the_same.py`** ensures:
-- Behavioral consistency between implementations
-- Similar test coverage percentages
-- Consistent error handling
-- Method signature compatibility
+test_runner = FlexibleDateTestRunner()
 
-## Adding New Tests
+def test_example():
+    test_data = {
+        "input": "2023-05-15",
+        "expected": {"likelyYear": 2023, "likelyMonth": 5, "likelyDay": 15},
+        "mocks": {}  # Optional mocking configuration
+    }
+    
+    py_result, ts_result = test_runner.run_dual_test(
+        "create_flexible_date",    # Python function name
+        "createFlexibleDate",      # TypeScript function name
+        test_data
+    )
+    
+    # Standard pytest assertions
+    assert py_result == test_data["expected"]
+    assert ts_result == test_data["expected"]
+    assert py_result == ts_result  # Parity check
+```
 
-### 1. Add Test Cases to Configuration
-Edit `test_config.json`:
-```json
-{
-  "your_category": {
-    "test_group": [
-      {
-        "name": "descriptive_name",
-        "input": "test_input",
-        "expected": {"expected": "result"}
-      }
-    ]
-  }
+## Mocking Support
+
+The framework supports mocking dependencies in both languages:
+
+```python
+test_data = {
+    "input": "test input",
+    "expected": {"result": "expected"},
+    "mocks": {
+        "python": {
+            "module.function": "mock_return_value"
+        },
+        "typescript": {
+            "functionName": "mock_return_value"
+        }
+    }
 }
 ```
 
-### 2. Update Test Files
-Use the `FlexibleDateTestRunner`:
-```python
-def test_your_functionality(self):
-    test_cases = self.runner.load_test_cases("your_category", "test_group")
-    
-    for case in test_cases:
-        self.runner.run_dual_test(
-            "methodName",
-            case["input"],
-            expected=case["expected"]
-        )
-```
+## Environment Setup
 
-### 3. Update TypeScript Bridge (if needed)
-Add new method handling in `FlexibleDateTS/test_bridge.ts`:
-```typescript
-case 'newMethod':
-    // Handle new method
-    return { success: true, result: ... };
-```
+The test runner automatically:
 
-## Coverage Requirements
+1. **Checks for Node.js** availability
+2. **Verifies TypeScript compilation** status
+3. **Compiles TypeScript if needed** (only when necessary)
+4. **Sets up the testing environment** once per test session
 
-- **Minimum Coverage**: 70% for both implementations
-- **Coverage Tolerance**: 5% difference between Python and TypeScript
-- **Behavioral Parity**: 95% of tests must pass for both implementations
+## CI Integration
 
-## Dependencies
+This framework works seamlessly with TestCoverageAction:
 
-### Python
-- `pytest` - Test framework
-- `coverage` - Coverage analysis
-- `json` - Test configuration parsing
-
-### TypeScript
-- `nyc` - Coverage analysis
-- `ts-node` - TypeScript execution
-- `typescript` - TypeScript compiler
-
-## Troubleshooting
-
-### TypeScript Bridge Not Found
-```bash
-cd FlexibleDateTS
-npm run build
-```
-
-### Coverage Analysis Fails
-Ensure all dependencies are installed:
-```bash
-pip install coverage pytest
-cd FlexibleDateTS && npm install
-```
-
-### Tests Fail Due to Implementation Differences
-1. Check the specific test output
-2. Verify both implementations handle the case correctly
-3. Update test expectations if needed
-4. Ensure TypeScript bridge correctly serializes/deserializes data
+- Python code execution is measured by coverage tools
+- TypeScript execution happens via subprocess (not measured, but that's expected)
+- Standard pytest workflow is preserved
+- No special CI configuration needed beyond ensuring Node.js is available
 
 ## Benefits
 
-1. **Single Source of Truth**: Test cases defined once in JSON
-2. **Automatic Synchronization**: Tests fail if implementations diverge  
-3. **Coverage Parity**: Ensures both versions are equally well-tested
-4. **Maintainable**: Standard subprocess approach, familiar to developers
-5. **Extensible**: Easy to add new test cases or methods
+- ✅ **Zero configuration** - Just run pytest
+- ✅ **Automatic parity checking** - Implementations can't diverge
+- ✅ **Proper coverage measurement** - Python code is measured correctly
+- ✅ **Self-contained** - No external setup scripts needed
+- ✅ **Developer friendly** - Standard pytest workflow
+- ✅ **CI compatible** - Works with existing TestCoverageAction
