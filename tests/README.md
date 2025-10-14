@@ -7,7 +7,8 @@ This testing framework automatically tests both Python and TypeScript implementa
 - **Self-contained setup** - Automatically handles Node.js environment and TypeScript compilation
 - **Dual-language testing** - Every test runs against both implementations simultaneously
 - **Coverage-aware** - Python code execution is measured by coverage tools
-- **Parity enforcement** - Tests fail if implementations return different results
+- **Strict parity enforcement** - Tests fail if implementations return different results, types, or structures
+- **Enhanced comparison** - Catches subtle differences like type mismatches and extra fields
 - **Mocking support** - Can mock dependencies in both Python and TypeScript environments
 
 ## Usage
@@ -50,7 +51,9 @@ def test_example():
     # Standard pytest assertions
     assert py_result == test_data["expected"]
     assert ts_result == test_data["expected"]
-    assert py_result == ts_result  # Parity check
+    
+    # Strict parity check - catches type mismatches and structural differences
+    test_runner.assert_strict_parity(py_result, ts_result, "test context")
 ```
 
 ## Mocking Support

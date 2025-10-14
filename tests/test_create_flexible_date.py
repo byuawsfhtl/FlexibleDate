@@ -31,7 +31,7 @@ class TestCreateFlexibleDate:
         assert py_result == test_data["expected"], f"Python result {py_result} != expected {test_data['expected']}"
         assert ts_result == test_data["expected"], f"TypeScript result {ts_result} != expected {test_data['expected']}"
         
-        # Assert both implementations return identical results (parity check)
-        assert py_result == ts_result, f"Implementation mismatch: Python={py_result}, TypeScript={ts_result}"
+        # Strict parity check - ensures identical types, fields, and values
+        test_runner.assert_strict_parity(py_result, ts_result, f"parsing '{test_data['input']}'")
         
         print(f"SUCCESS: Both implementations correctly parsed '{test_data['input']}' as {py_result}")

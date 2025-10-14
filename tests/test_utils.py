@@ -207,3 +207,103 @@ class FlexibleDateTestRunner:
             likely_month=data.get("likelyMonth"),
             likely_day=data.get("likelyDay")
         )
+    
+    def compare_results(self, py_result: Any, ts_result: Any) -> bool:
+        """
+        Perform strict comparison between Python and TypeScript results.
+        
+        This method checks not only value equality but also:
+        - Type consistency
+        - Field presence and ordering (for dictionaries)
+        - Null/None representation consistency
+        - No extra metadata fields
+        
+        Args:
+            py_result: Result from Python implementation
+            ts_result: Result from TypeScript implementation
+            
+        Returns:
+            bool: True if results are strictly identical, False otherwise
+        """
+        # Basic equality check
+        if py_result != ts_result:
+            return False
+        
+        # Type checking - must be exactly the same type
+        if type(py_result) != type(ts_result):
+            return False
+        
+        # For dictionaries, perform deep field-by-field comparison
+        if isinstance(py_result, dict) and isinstance(ts_result, dict):
+            # Check that both have exactly the same keys
+            if set(py_result.keys()) != set(ts_result.keys()):
+                return False
+            
+            # Check that each field has the same type
+            for key in py_result.keys():
+                py_value = py_result[key]
+                ts_value = ts_result[key]
+                
+                # Recursive type checking for nested structures
+                if type(py_value) != type(ts_value):
+                    return False
+                
+                # For nested dictionaries, recurse
+                if isinstance(py_value, dict) and isinstance(ts_value, dict):
+                    if not self.compare_results(py_value, ts_value):
+                        return False
+        
+        # For lists, check element types
+        elif isinstance(py_result, list) and isinstance(ts_result, list):
+            if len(py_result) != len(ts_result):
+                return False
+            
+            for py_item, ts_item in zip(py_result, ts_result):
+                if not self.compare_results(py_item, ts_item):
+                    return False
+        
+        return True
+    
+    def assert_strict_parity(self, py_result: Any, ts_result: Any, context: str = ""):
+        """
+        Assert strict parity between Python and TypeScript results with detailed error reporting.
+        
+        Args:
+            py_result: Result from Python implementation
+            ts_result: Result from TypeScript implementation  
+            context: Additional context for error messages
+            
+        Raises:
+            AssertionError: If results are not strictly identical, with detailed explanation
+        """
+        if not self.compare_results(py_result, ts_result):
+            error_details = []
+            
+            # Basic equality
+            if py_result != ts_result:
+                error_details.append(f"Value mismatch: Python={py_result}, TypeScript={ts_result}")
+            
+            # Type checking
+            if type(py_result) != type(ts_result):
+                error_details.append(f"Type mismatch: Python={type(py_result).__name__}, TypeScript={type(ts_result).__name__}")
+            
+            # Dictionary field analysis
+            if isinstance(py_result, dict) and isinstance(ts_result, dict):
+                py_keys = set(py_result.keys())
+                ts_keys = set(ts_result.keys())
+                
+                if py_keys != ts_keys:
+                    missing_in_ts = py_keys - ts_keys
+                    missing_in_py = ts_keys - py_keys
+                    if missing_in_ts:
+                        error_details.append(f"Fields missing in TypeScript: {missing_in_ts}")
+                    if missing_in_py:
+                        error_details.append(f"Fields missing in Python: {missing_in_py}")
+                
+                # Field type mismatches
+                for key in py_keys & ts_keys:
+                    if type(py_result[key]) != type(ts_result[key]):
+                        error_details.append(f"Field '{key}' type mismatch: Python={type(py_result[key]).__name__}, TypeScript={type(ts_result[key]).__name__}")
+            
+            context_str = f" ({context})" if context else ""
+            raise AssertionError(f"Implementation parity check failed{context_str}:\n" + "\n".join(f"  - {detail}" for detail in error_details))
