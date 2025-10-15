@@ -143,6 +143,21 @@ class FlexibleDateTestRunner:
                 elif function_name == "combine_flexible_dates":
                     dates = [self._deserialize_flexible_date(d) for d in input_data]
                     result = combine_flexible_dates(dates)
+                elif function_name == "test_bool":
+                    fd = self._deserialize_flexible_date(input_data)
+                    result = bool(fd)
+                elif function_name == "test_str":
+                    fd = self._deserialize_flexible_date(input_data)
+                    result = str(fd)
+                elif function_name == "test_repr":
+                    fd = self._deserialize_flexible_date(input_data)
+                    result = repr(fd)
+                elif function_name == "test_validator":
+                    try:
+                        fd = self._deserialize_flexible_date(input_data)
+                        result = self._serialize_flexible_date(fd)
+                    except ValueError as e:
+                        result = f"ValidationError: {e}"
                 else:
                     raise ValueError(f"Unknown Python function: {function_name}")
                 

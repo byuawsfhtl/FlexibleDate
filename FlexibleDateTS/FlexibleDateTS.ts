@@ -46,6 +46,32 @@ export default class FlexibleDate {
         this.likelyMonth = arg2 ?? null;
         this.likelyYear = arg3 ?? null;
       }
+      
+      // Validate fields
+      this.validateFields();
+    }
+    
+    private validateFields(): void {
+        // Validate year
+        if (this.likelyYear !== null && this.likelyYear !== undefined) {
+            if (this.likelyYear < -100000 || this.likelyYear > 100000) {
+                throw new Error('likely_year must be between -100,000 BC and 100,000 AD');
+            }
+        }
+        
+        // Validate month
+        if (this.likelyMonth !== null && this.likelyMonth !== undefined) {
+            if (this.likelyMonth < 1 || this.likelyMonth > 12) {
+                throw new Error('likely_month must be between 1 and 12');
+            }
+        }
+        
+        // Validate day
+        if (this.likelyDay !== null && this.likelyDay !== undefined) {
+            if (this.likelyDay < 1 || this.likelyDay > 31) {
+                throw new Error('likely_day must be between 1 and 31');
+            }
+        }
     }
 
     public toString() {  
@@ -56,25 +82,31 @@ export default class FlexibleDate {
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         return (hasDay ? this.likelyDay : "") +
         (hasDay && hasMonth ? " " : "") +
-        (hasMonth ? months[this.likelyMonth!] : "") +
+        (hasMonth ? months[this.likelyMonth! - 1] : "") +
         ((hasDay || hasMonth) && hasYear ? " " : "") +
         (hasYear ? this.likelyYear : "");
     }
 
     public inspect(): string {
-        let yearConversion = `${this.likelyYear}`;
+        let yearConversion = `${this.likelyYear ? Math.abs(this.likelyYear) : ''}`;
 
         while (yearConversion.length < 4) {
             yearConversion = `0${yearConversion}`;
         }
+        if (this.likelyYear && this.likelyYear > 0) {
+            yearConversion = `+${yearConversion}`;
+        }
+        else if (this.likelyYear && this.likelyYear < 0) {
+            yearConversion = `-${yearConversion}`;
+        }
         if (this.likelyDay && this.likelyMonth) {
-            return `+${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}-${this.likelyDay < 10 ? '0' : ''}${this.likelyDay}`;
+            return `${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}-${this.likelyDay < 10 ? '0' : ''}${this.likelyDay}`;
         }
         else if (this.likelyMonth) {
-            return `+${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}`;
+            return `${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}`;
         }
         else {
-            return `+${yearConversion}`;
+            return `${yearConversion}`;
         }
     }
 

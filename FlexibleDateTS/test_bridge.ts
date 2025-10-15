@@ -81,6 +81,45 @@ function processRequest(request: TestRequest): TestResponse {
                     result: fdForValue.valueOf()
                 };
 
+            case 'testBool':
+                const [fdDataBool] = request.args;
+                const fdForBool = deserializeFlexibleDate(fdDataBool);
+                return {
+                    success: true,
+                    result: fdForBool.valueOf()
+                };
+
+            case 'testStr':
+                const [fdDataStr] = request.args;
+                const fdForStr = deserializeFlexibleDate(fdDataStr);
+                return {
+                    success: true,
+                    result: fdForStr.toString()
+                };
+
+            case 'testRepr':
+                const [fdDataRepr] = request.args;
+                const fdForRepr = deserializeFlexibleDate(fdDataRepr);
+                return {
+                    success: true,
+                    result: fdForRepr.inspect()
+                };
+
+            case 'testValidator':
+                try {
+                    const [fdDataValidator] = request.args;
+                    const fdForValidator = deserializeFlexibleDate(fdDataValidator);
+                    return {
+                        success: true,
+                        result: serializeFlexibleDate(fdForValidator)
+                    };
+                } catch (error) {
+                    return {
+                        success: true,
+                        result: `ValidationError: ${error instanceof Error ? error.message : String(error)}`
+                    };
+                }
+
             default:
                 return {
                     success: false,
