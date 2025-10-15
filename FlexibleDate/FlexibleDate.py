@@ -109,7 +109,7 @@ class FlexibleDate(BaseModel):
         else:
             return f'+{year_conversion}'
     
-def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float:
+def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float | int:
     """Compares two flexible dates and gives the comparison a score.
 
     Args:
@@ -117,7 +117,7 @@ def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float:
         date2 (FlexibleDate): a FlexibleDate object
 
     Returns:
-        float: the score
+        float | int: the score
     """    
     score = 100
 
@@ -150,7 +150,9 @@ def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float:
             scores.append(max(0, 1 - diff / max_diff) * weight)
         score = sum(scores) * 100
 
-    return score
+    # Return int if whole number, float otherwise
+    rounded_score = round(score, 5)
+    return int(rounded_score) if rounded_score == int(rounded_score) else rounded_score
 
 def combine_flexible_dates(dates: list[FlexibleDate]) -> FlexibleDate:
     """Combines multiple flexible dates to find the most accurate representation of the event.

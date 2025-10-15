@@ -45,7 +45,7 @@ function processRequest(request: TestRequest): TestResponse {
                     result: serializeFlexibleDate(result)
                 };
 
-            case 'compareTwoDates':
+            case 'compareDates':
                 const [date1Data, date2Data] = request.args;
                 const fd1 = deserializeFlexibleDate(date1Data);
                 const fd2 = deserializeFlexibleDate(date2Data);

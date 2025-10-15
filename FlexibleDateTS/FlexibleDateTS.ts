@@ -221,10 +221,13 @@ export default class FlexibleDate {
                 allScores.push(Math.max(0, 1 - diff / maxDiff) * weight);
             }
             
-            score = Math.round((allScores.reduce((sum, score) => sum + score, 0)) * 100);
+            score = (allScores.reduce((sum, score) => sum + score, 0)) * 100;
         }
 
-        return score;
+        if (Number.isInteger(score)) {
+            return score;
+        }
+        return Number(score.toFixed(5));
     }
 
     private chooseMostReasonableValue(values: (number | null | undefined)[]){

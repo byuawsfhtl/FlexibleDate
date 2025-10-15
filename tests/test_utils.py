@@ -292,6 +292,7 @@ class FlexibleDateTestRunner:
             # Type checking
             if type(py_result) != type(ts_result):
                 error_details.append(f"Type mismatch: Python={type(py_result).__name__}, TypeScript={type(ts_result).__name__}")
+                error_details.append(f"Python value: {py_result}, TypeScript value: {ts_result}")
             
             # Dictionary field analysis
             if isinstance(py_result, dict) and isinstance(ts_result, dict):
