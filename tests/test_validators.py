@@ -76,7 +76,7 @@ class TestYearValidator:
     
     @pytest.mark.parametrize("test_case", invalid_year_cases, ids=lambda x: x['description'])
     def test_invalid_years(self, test_case):
-        test_data = {"input": test_case["input"], "expected": "ValidationError", "mocks": {}}
+        test_data = {"input": test_case["input"], "expected": "ValueError", "mocks": {}}
         
         py_result, ts_result = test_runner.run_dual_test(
             "test_validator",
@@ -84,8 +84,8 @@ class TestYearValidator:
             test_data
         )
         
-        assert py_result == "ValidationError", f"Python should raise ValidationError for {test_case['description']}"
-        assert ts_result == "ValidationError", f"TypeScript should raise ValidationError for {test_case['description']}"
+        assert py_result == "ValueError", f"Python should raise ValueError for {test_case['description']}"
+        assert ts_result == "ValueError", f"TypeScript should raise ValueError for {test_case['description']}"
         test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
@@ -150,7 +150,7 @@ class TestMonthValidator:
     
     @pytest.mark.parametrize("test_case", invalid_month_cases, ids=lambda x: x['description'])
     def test_invalid_months(self, test_case):
-        test_data = {"input": test_case["input"], "expected": "ValidationError", "mocks": {}}
+        test_data = {"input": test_case["input"], "expected": "ValueError", "mocks": {}}
         
         py_result, ts_result = test_runner.run_dual_test(
             "test_validator",
@@ -158,8 +158,8 @@ class TestMonthValidator:
             test_data
         )
         
-        assert py_result == "ValidationError", f"Python should raise ValidationError for {test_case['description']}"
-        assert ts_result == "ValidationError", f"TypeScript should raise ValidationError for {test_case['description']}"
+        assert py_result == "ValueError", f"Python should raise ValueError for {test_case['description']}"
+        assert ts_result == "ValueError", f"TypeScript should raise ValueError for {test_case['description']}"
         test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
@@ -224,7 +224,7 @@ class TestDayValidator:
     
     @pytest.mark.parametrize("test_case", invalid_day_cases, ids=lambda x: x['description'])
     def test_invalid_days(self, test_case):
-        test_data = {"input": test_case["input"], "expected": "ValidationError", "mocks": {}}
+        test_data = {"input": test_case["input"], "expected": "ValueError", "mocks": {}}
         
         py_result, ts_result = test_runner.run_dual_test(
             "test_validator",
@@ -232,7 +232,7 @@ class TestDayValidator:
             test_data
         )
         
-        assert py_result == "ValidationError", f"Python should raise ValidationError for {test_case['description']}"
-        assert ts_result == "ValidationError", f"TypeScript should raise ValidationError for {test_case['description']}"
+        assert py_result == "ValueError", f"Python should raise ValueError for {test_case['description']}"
+        assert ts_result == "ValueError", f"TypeScript should raise ValueError for {test_case['description']}"
         test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 

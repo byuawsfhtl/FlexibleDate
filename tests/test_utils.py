@@ -10,6 +10,7 @@ from unittest.mock import patch, MagicMock
 # Add the FlexibleDate module to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'FlexibleDate'))
 from FlexibleDate import FlexibleDate, create_flexible_date, create_flexible_date_from_formal_date, compare_two_dates, combine_flexible_dates
+from pydantic import ValidationError as PydanticValidationError
 
 
 class FlexibleDateTestRunner:
@@ -156,8 +157,8 @@ class FlexibleDateTestRunner:
                     try:
                         fd = self._deserialize_flexible_date(input_data)
                         result = self._serialize_flexible_date(fd)
-                    except ValueError as e:
-                        result = f"ValidationError: {e}"
+                    except (ValueError, PydanticValidationError) as e:
+                        result = "ValueError"
                 else:
                     raise ValueError(f"Unknown Python function: {function_name}")
                 

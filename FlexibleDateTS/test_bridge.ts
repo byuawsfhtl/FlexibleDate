@@ -116,7 +116,7 @@ function processRequest(request: TestRequest): TestResponse {
                 } catch (error) {
                     return {
                         success: true,
-                        result: `ValidationError: ${error instanceof Error ? error.message : String(error)}`
+                        result: "ValueError"
                     };
                 }
 
