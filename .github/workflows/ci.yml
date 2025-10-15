@@ -37,6 +37,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
+      
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Install dependencies
         env:
@@ -45,8 +50,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r FlexibleDate/requirements.txt
 
+      - name: Install npm dependencies
+        run: |
+          cd FlexibleDateTS
+          npm install
+          npm run build
+          cd ..
+
       - name: Check Test Coverage
         uses: byuawsfhtl/TestCoverageAction@v1.0.0
         with:
           test_paths: tests/
-          exclude_paths: FlexibleDateTS/, tests/, **/test_*.py
+          exclude_paths: FlexibleDateTS/, tests/, **/test_*.py, **/__init__.py, _version.py, setup.py
