@@ -163,9 +163,15 @@ class FlexibleDateTestRunner:
     def _call_typescript_function_with_mocks(self, function_name: str, input_data: Any, mocks: Dict[str, Any]) -> Any:
         """Call a TypeScript function via subprocess with optional mocking."""
         try:
+            # For combineFlexibleDates, input_data is a list of dates that should be passed as a single argument
+            if function_name == "combineFlexibleDates":
+                args = [input_data]
+            else:
+                args = [input_data] if not isinstance(input_data, list) else input_data
+            
             request = {
                 "method": function_name,
-                "args": [input_data] if not isinstance(input_data, list) else input_data,
+                "args": args,
                 "mocks": mocks
             }
             

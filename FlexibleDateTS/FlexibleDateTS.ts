@@ -269,7 +269,7 @@ export default class FlexibleDate {
         const year = allYears.length > 0 ? this.chooseMostReasonableValue(allYears) : null;
         const month = allMonths.length > 0 ? this.chooseMostReasonableValue(allMonths) : null;
         const day = allDays.length > 0 ? this.chooseMostReasonableValue(allDays) : null;
-
+        
         return new FlexibleDate(day, month, year);
     }
 
