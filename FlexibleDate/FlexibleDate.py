@@ -75,8 +75,8 @@ class FlexibleDate(BaseModel):
         Returns:
             bool: true if the date is not null, false otherwise
         """
-        isNull = lambda x: x is None or isinstance(x, float) and math.isnan(x)
-        return not (isNull(self.likely_year) and isNull(self.likely_month) and isNull(self.likely_day))
+        is_null = lambda x: x is None or isinstance(x, float) and math.isnan(x)
+        return not (is_null(self.likely_year) and is_null(self.likely_month) and is_null(self.likely_day))
     
     def __str__(self) -> str:
         """Defines the string representation of the object (which is international format).
@@ -152,7 +152,9 @@ def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float | int:
 
     # Return int if whole number, float otherwise
     rounded_score = round(score, 5)
-    return int(rounded_score) if rounded_score == int(rounded_score) else rounded_score
+    if rounded_score == int(rounded_score):
+        return int(rounded_score)
+    return rounded_score
 
 def combine_flexible_dates(dates: list[FlexibleDate]) -> FlexibleDate:
     """Combines multiple flexible dates to find the most accurate representation of the event.
@@ -198,10 +200,7 @@ def create_flexible_date_from_formal_date(formal_date: str) -> FlexibleDate:
     """Creates a FlexibleDate object from a formal date string.
     
     Args:
-        formal_date (str): an EDTF (Extended Date/Time Format) string such as:
-            "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
-            "+1910/+1910" (year range)
-            "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
+        formal_date (str): an EDTF (Extended Date/Time Format) string.
     
     Raises:
         ValueError: raised if input is not a valid EDTF string
@@ -226,14 +225,12 @@ def create_flexible_date_from_formal_date(formal_date: str) -> FlexibleDate:
         likely_month = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_date.split('-')) > 1 else None
         likely_day = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_date.split('-')) > 2 else None
         
-        if '/' in cleaned_date:
-            parts = cleaned_date.split('/')
-            if len(parts) == 2:
-                start_part = parts[0]
-                end_part = parts[1]
-                if len(start_part) == 4 and len(end_part) == 4 and start_part.isdigit() and end_part.isdigit():
-                    likely_month = None
-                    likely_day = None
+        if '/' in cleaned_date and len(parts := cleaned_date.split('/')) == 2:
+            start_part = parts[0]
+            end_part = parts[1]
+            if len(start_part) == 4 and len(end_part) == 4 and start_part.isdigit() and end_part.isdigit():
+                likely_month = None
+                likely_day = None
         
         return FlexibleDate(likely_year=likely_year, likely_month=likely_month, likely_day=likely_day)
         
@@ -402,17 +399,39 @@ def glean_year_month_day(text:str) -> tuple[str|None, str|None, str|None]:
 
     Returns:
         list[tuple[str|None, str|None, str|None]]: the options of year, month, day
-    """    
-
-    # Acceptable combos
-    acceptable_combos = set()
-
-    # Add nothing, in case nothing is found
-    combo = (None, None, None)
-    acceptable_combos.add(combo)
+    """
 
     valid_years = [match for match in re.findall(r'[-]?(?=(\d{4}))', text) if int(match) <= datetime.now().year] # overlapping 4 digits between 1000 and current year
     valid_years_and_instances = _get_strings_and_instances(valid_years)
+    acceptable_combos = _get_acceptable_combos(text, valid_years_and_instances)
+    key_func = lambda t: (
+        sum(len(str(x)) for x in t if x is not None),  # Primary ranking: total characters in non-None elements
+        sum(1 for x in t if x is not None)             # Secondary ranking: count of non-None elements
+    )
+    scores:dict[tuple[str|None, str|None, str|None], tuple[int, int]] = {option: key_func(option) for option in acceptable_combos}
+    max_score = max(scores.values())
+    best_options = [option for option, score in scores.items() if score == max_score]
+    for i in range(len(best_options)):
+        for j in range(i + 1, len(best_options)):
+            year_a, month_a, day_a = best_options[i]
+            year_b, month_b, day_b = best_options[j]
+            year_a = year_a if year_a == year_b else None
+            if (month_a != month_b) or (day_a != day_b):
+                month_a = None
+                day_a = None
+            best_options[i] = (year_a, month_a, day_a)
+            best_options[j] = (year_a, month_a, day_a)
+    return best_options[0]
+
+def _get_acceptable_combos(text:str, valid_years_and_instances:list[tuple[str, int]]) -> set[tuple[str|None, str|None, str|None]]:
+    """Gets the acceptable combos.
+
+    Args:
+        text (str): the text to search within
+        valid_years_and_instances (list[tuple[str, int]]): the valid years and instances
+    """
+    acceptable_combos = set()
+    acceptable_combos.add((None, None, None))
     for year, i in valid_years_and_instances:
         # Add the acceptable year in case no valid months are found
         combo = (year, None, None)
@@ -440,24 +459,6 @@ def glean_year_month_day(text:str) -> tuple[str|None, str|None, str|None]:
                     acceptable_combos.add(combo)
                 except ParserError:
                     pass
-    key_func = lambda t: (
-        sum(len(str(x)) for x in t if x is not None),  # Primary ranking: total characters in non-None elements
-        sum(1 for x in t if x is not None)             # Secondary ranking: count of non-None elements
-    )
-    scores:dict[tuple[str|None, str|None, str|None], tuple[int, int]] = {option: key_func(option) for option in acceptable_combos}
-    max_score = max(scores.values())
-    best_options = [option for option, score in scores.items() if score == max_score]
-    for i in range(len(best_options)):
-        for j in range(i + 1, len(best_options)):
-            year_a, month_a, day_a = best_options[i]
-            year_b, month_b, day_b = best_options[j]
-            year_a = year_a if year_a == year_b else None
-            if (month_a != month_b) or (day_a != day_b):
-                month_a = None
-                day_a = None
-            best_options[i] = (year_a, month_a, day_a)
-            best_options[j] = (year_a, month_a, day_a)
-    return best_options[0]
 
 def _get_strings_and_instances(strings:list[str]) -> list[tuple[str, int]]:
     """Gets the strings and instances.

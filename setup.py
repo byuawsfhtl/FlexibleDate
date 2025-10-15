@@ -3,7 +3,7 @@ import os
 from _version import __version__ as version
 
 with open("README.md", "r", encoding="utf-8") as fh:
-    longDescription = fh.read()
+    long_description = fh.read()
 
 requirements = ""
 with open("FlexibleDate/requirements.txt", "r", encoding="utf-8") as fh:
@@ -11,7 +11,7 @@ with open("FlexibleDate/requirements.txt", "r", encoding="utf-8") as fh:
 
 requirements = requirements.split("\n")
 
-def listFolders(directory: str) -> list:
+def list_folders(directory: str) -> list:
     """Creates a list of all the folders in a directory.
 
     Args:
@@ -22,16 +22,16 @@ def listFolders(directory: str) -> list:
     """
     folders = []
     for item in os.listdir(directory):
-        itemPath = os.path.join(directory, item)
-        if os.path.isdir(itemPath) and item != "__pycache__":
-            folders.append(itemPath)
-    otherFolders = [listFolders(itemPath) for itemPath in folders]
-    for folder in otherFolders:
+        item_path = os.path.join(directory, item)
+        if os.path.isdir(item_path) and item != "__pycache__":
+            folders.append(item_path)
+    other_folders = [list_folders(item_path) for item_path in folders]
+    for folder in other_folders:
         folders.extend(folder)
     return folders
 
-folderPath = "FlexibleDate"
-folders = listFolders(folderPath)
+folder_path = "FlexibleDate"
+folders = list_folders(folder_path)
 folders.append("FlexibleDate")
 print(folders)
 
@@ -41,7 +41,7 @@ setuptools.setup(
     author='Record Linking Lab',
     author_email='recordlinkinglab@gmail.com',
     description='This is a library used to make fuzzy date comparisons.',
-    long_description=longDescription,
+    long_description=long_description,
     long_description_content_type="text/markdown",
     url='https://github.com/byuawsfhtl/FlexibleDate.git',
     project_urls = {
