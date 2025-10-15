@@ -79,7 +79,7 @@ export default class FlexibleDate {
     }
 
     public createFlexibleDate(likelyDate : string | null | undefined){
-        if( likelyDate == null || likelyDate == undefined || likelyDate == ""){
+        if( likelyDate == null || likelyDate == undefined || likelyDate.trim() == ""){
             return new FlexibleDate(null, null, null);
         }
         else if(typeof likelyDate != "string"){
@@ -132,7 +132,12 @@ export default class FlexibleDate {
             // Clean the input - remove '+' signs which aren't standard EDTF
             const cleanedDate = formalDate.replace(/\+/g, '')
             
-            const edtfObj = edtf.parse(cleanedDate)
+            let edtfObj = edtf.parse(cleanedDate) as {
+                type: string;
+                level: number;
+                values: number[] | Object[];
+            }
+            let lowerDate;
             
             // Extract year, month, day from the edtf object
             // The edtf package returns { type: 'Date', level: 0, values: [year, month-1, day] }
@@ -140,17 +145,27 @@ export default class FlexibleDate {
             let likelyYear: number | null = null
             let likelyMonth: number | null = null  
             let likelyDay: number | null = null
+
+            if (edtfObj && edtfObj.type === 'Interval' && Array.isArray(edtfObj.values) && edtfObj.values[0]) {
+                lowerDate = edtfObj.values[0] as {
+                    type: string;
+                    level: number;
+                    values: number[];
+                };
+            }
+            else {
+                lowerDate = edtfObj as {
+                    type: string;
+                    level: number;
+                    values: number[];
+                };
+            }
             
-            if (edtfObj && edtfObj.values && Array.isArray(edtfObj.values)) {
-                const [year, month, day] = edtfObj.values
+            if (lowerDate && lowerDate.values && Array.isArray(lowerDate.values)) {
+                const [year, month, day] = lowerDate.values
                 
-                // Handle year (same logic as Python version)
                 likelyYear = (year !== undefined && year !== 9999) ? year : null
-                
-                // Handle month (convert from 0-indexed to 1-indexed, same logic as Python)
                 likelyMonth = (month !== undefined && (month !== 0 || cleanedDate.split('-').length > 1)) ? month + 1 : null
-                
-                // Handle day (same logic as Python version)
                 likelyDay = (day !== undefined && (day !== 1 || cleanedDate.split('-').length > 2)) ? day : null
             }
             
@@ -167,7 +182,7 @@ export default class FlexibleDate {
                 }
             }
 
-            return new FlexibleDate(likelyYear, likelyMonth, likelyDay)
+            return new FlexibleDate(likelyDay, likelyMonth, likelyYear)
         } catch (error) {
             throw new Error(`Unable to parse EDTF string "${formalDate}": ${error}`)
         }
@@ -299,11 +314,9 @@ export default class FlexibleDate {
         acceptableCombos.add([null, null, null]);
 
         // Find valid years (overlapping 4-digit years up to the current year)
-        // Mimic Python's re.findall(r'[-]?(?=(\d{4}))', text)
-        // matchAll() returns capture groups like Python's findall()
         const currentYear = new Date().getFullYear();
         const validYears = Array.from(text.matchAll(/[-]?(?=(\d{4}))/g))
-            .map(match => match[1])  // Extract capture group (the 4 digits)
+            .map(match => match[1])
             .filter(year => parseInt(year) <= currentYear);
 
         const validYearsAndInstances = this.getStringsAndInstances(validYears);
@@ -324,10 +337,19 @@ export default class FlexibleDate {
                 const validDays = this.findAllMatches(textB, ['[1-9]', '0[1-9]', '1[0-9]', '2[0-9]', '3[01]']);
 
                 for (const day of validDays) {
-                    const combo: YearMonthDay = [year, month, day];
+                    const monthNum = parseInt(month);
+                    const dayNum = parseInt(day);
+                    
+                    // Validate range and ensure no date overflow
+                    if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) continue;
+                    
                     try {
-                        parse(`${year}-${month}-${day}`, 'yyyy-M-d', new Date());
-                        acceptableCombos.add(combo);
+                        const parsedTest = parse(`${year}-${month}-${day}`, 'yyyy-M-d', new Date());
+                        if (parsedTest.getFullYear() === parseInt(year) &&
+                            parsedTest.getMonth() + 1 === monthNum &&
+                            parsedTest.getDate() === dayNum) {
+                            acceptableCombos.add([year, month, day]);
+                        }
                     } catch (error) {
                         // Ignore invalid dates
                         console.log(error);
@@ -367,7 +389,7 @@ export default class FlexibleDate {
                 bestOptions[j] = [yearA, monthA, dayA];
             }
         }
-            return bestOptions[0];
+        return bestOptions[0];
     }
 
     private getStringsAndInstances(stringList: string[]){

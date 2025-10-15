@@ -213,6 +213,8 @@ def create_flexible_date_from_formal_date(formal_date: str) -> FlexibleDate:
     try:
         # Clean the input - remove '+' signs which aren't standard EDTF
         cleaned_date = formal_date.replace('+', '')
+        # Remove time and timezone info (e.g., T00:00:00Z) to keep only the date
+        cleaned_date = re.sub(r'T\d{2}:\d{2}:\d{2}Z', '', cleaned_date)
         
         edtf_obj = parse_edtf(cleaned_date)
         

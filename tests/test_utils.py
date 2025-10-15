@@ -176,6 +176,12 @@ class FlexibleDateTestRunner:
                 text=True,
                 cwd=str(self.root_dir)
             )
+
+            if result.stderr:
+                print("=== TypeScript Debug Output ===")
+                print(result.stderr)
+                print("================================")
+
             
             if result.returncode != 0:
                 raise RuntimeError(f"TypeScript bridge failed: {result.stderr}")
