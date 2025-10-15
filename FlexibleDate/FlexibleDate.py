@@ -125,28 +125,32 @@ def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float | int:
     """    
     score = 100
 
+    both_years = date1.likely_year and date2.likely_year
+    both_months = date1.likely_month and date2.likely_month
+    both_days = date1.likely_day and date2.likely_day
+
     if date1 and date2:
         shared_non_null_count = 0
-        if date1.likely_year and date2.likely_year:
+        if both_years:
             shared_non_null_count += 1
-        if date1.likely_month and date2.likely_month:
+        if both_months:
             shared_non_null_count += 1
-        if date1.likely_day and date2.likely_day:
+        if both_days:
             shared_non_null_count += 1
         
         weight = 1 / shared_non_null_count if shared_non_null_count > 0 else 1
 
         scores = []
 
-        if date1.likely_day and date2.likely_day:
+        if both_days:
             max_diff = 15
             diff = abs(date1.likely_day - date2.likely_day)
             scores.append(max(0, 1 - diff / max_diff) * weight)
-        if date1.likely_month and date2.likely_month:
+        if both_months:
             max_diff = 6
             diff = abs(date1.likely_month - date2.likely_month)
             scores.append(max(0, 1 - diff / max_diff) * weight)
-        if date1.likely_year and date2.likely_year:
+        if both_years:
             max_diff = 20
             diff = abs(date1.likely_year - date2.likely_year)
             if diff >= max_diff:
@@ -156,9 +160,7 @@ def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float | int:
 
     # Return int if whole number, float otherwise
     rounded_score = round(score, 5)
-    if rounded_score == int(rounded_score):
-        return int(rounded_score)
-    return rounded_score
+    return int(rounded_score) if rounded_score == int(rounded_score) else rounded_score
 
 def combine_flexible_dates(dates: list[FlexibleDate]) -> FlexibleDate:
     """Combines multiple flexible dates to find the most accurate representation of the event.
@@ -434,6 +436,9 @@ def _get_acceptable_combos(text:str, valid_years_and_instances:list[tuple[str, i
     Args:
         text (str): the text to search within
         valid_years_and_instances (list[tuple[str, int]]): the valid years and instances
+
+    Returns:
+        set[tuple[str|None, str|None, str|None]]: the acceptable combos
     """
     acceptable_combos = set()
     acceptable_combos.add((None, None, None))
@@ -447,23 +452,37 @@ def _get_acceptable_combos(text:str, valid_years_and_instances:list[tuple[str, i
         valid_months = _find_all_matches(text_a, ['[1-9]', '0[1-9]', '1[0-9]', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
         valid_months_and_instances = _get_strings_and_instances(valid_months)
 
-        # Loop over valid months
-        for month, i in valid_months_and_instances:
-            # Add the acceptable year month combo in case no valid days are found
-            combo = (year, month, None)
-            acceptable_combos.add(combo)
+        _add_month_and_day_combos(year, text_a, acceptable_combos, valid_months_and_instances)
 
-            # Find valid days (after removing days)
-            text_b = _substitute_ith_isntance(text_a, month, ' ', i).strip().replace('  ', ' ')
-            valid_days = _find_all_matches(text_b, ['[1-9]', '0[1-9]', '1[0-9]', '2[0-9]', '3[01]'])
-            for day in valid_days:
-                # Append date combo if valid
-                combo = (year, month, day)
-                try:
-                    parse(f'{year}-{month}-{day}')
-                    acceptable_combos.add(combo)
-                except ParserError:
-                    pass
+def _add_month_and_day_combos(year:str, text_a:str, acceptable_combos:set[tuple[str|None, str|None, str|None]], valid_months_and_instances:list[tuple[str, int]]) -> None:
+    """Adds the month and day combos to the acceptable combos.
+
+    Args:
+        year (str): the year
+        text_a (str): the text to search within
+        acceptable_combos (set[tuple[str|None, str|None, str|None]]): the acceptable combos
+        valid_months_and_instances (list[tuple[str, int]]): the valid months and instances
+
+    Returns:
+        set[tuple[str|None, str|None, str|None]]: the acceptable combos
+    """
+    # Loop over valid months
+    for month, i in valid_months_and_instances:
+        # Add the acceptable year month combo in case no valid days are found
+        combo = (year, month, None)
+        acceptable_combos.add(combo)
+
+        # Find valid days (after removing days)
+        text_b = _substitute_ith_isntance(text_a, month, ' ', i).strip().replace('  ', ' ')
+        valid_days = _find_all_matches(text_b, ['[1-9]', '0[1-9]', '1[0-9]', '2[0-9]', '3[01]'])
+        for day in valid_days:
+            # Append date combo if valid
+            combo = (year, month, day)
+            try:
+                parse(f'{year}-{month}-{day}')
+                acceptable_combos.add(combo)
+            except ParserError:
+                pass
 
 def _get_strings_and_instances(strings:list[str]) -> list[tuple[str, int]]:
     """Gets the strings and instances.
