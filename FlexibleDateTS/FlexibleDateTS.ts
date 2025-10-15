@@ -271,12 +271,18 @@ export default class FlexibleDate {
             }
 
             parsedDate = new Date(date);
-            
-            if (parsedDate.getFullYear() === 9999) {
-                numFields += 1;
+            if (isNaN(parsedDate.getTime())) {
+                parsedDate = new Date('9999 ' + date);
             }
 
-            numFields += date.split(/\s+/).length;
+            // In Python, if parse() raises ParserError, num_fields stays 0. This doesn't happen in TS.
+            if (!isNaN(parsedDate.getTime())) {
+                numFields = date.split(/\s+/).length;
+                
+                if (parsedDate.getFullYear() === 9999) {
+                    numFields += 1;
+                }
+            }
 
         } catch (error) {
             if (error instanceof Error) {
@@ -292,9 +298,12 @@ export default class FlexibleDate {
 
         acceptableCombos.add([null, null, null]);
 
-        // Find valid years (4-digit years up to the current year)
+        // Find valid years (overlapping 4-digit years up to the current year)
+        // Mimic Python's re.findall(r'[-]?(?=(\d{4}))', text)
+        // matchAll() returns capture groups like Python's findall()
         const currentYear = new Date().getFullYear();
-        const validYears = (text.match(/[-]?(?=(\d{4}))/g) || [])
+        const validYears = Array.from(text.matchAll(/[-]?(?=(\d{4}))/g))
+            .map(match => match[1])  // Extract capture group (the 4 digits)
             .filter(year => parseInt(year) <= currentYear);
 
         const validYearsAndInstances = this.getStringsAndInstances(validYears);
