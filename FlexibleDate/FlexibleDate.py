@@ -304,7 +304,7 @@ def _get_cleaned_date_and_num_fields(date:str) -> tuple[datetime|AncientDateTime
     date = _clean_date(date)
 
     # Check if we are dealing with a date between 9999 BC to 99 AD
-    if bool(re.match(r'^-?[0-9]{4}$', date)):
+    if bool(re.match(r'^-?[0-9]{1,4}$', date)):
         return AncientDateTime(year=int(date)), 1
     
     # Attempt to parse using dateutil
@@ -354,6 +354,7 @@ def _clean_date(date:str) -> str:
     date = re.sub(r'[^\w\s]', ' ', date)
     date = date.replace('  ', ' ')
     date = re.sub(r'(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])', ' ', date) # Add spaces between letters and numbers to seperate them
+    
     protected_words = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'bc']
     date = re.sub(r'(' + '|'.join(protected_words) + r')', r' \1 ', date, flags=re.IGNORECASE) # Add spaces between all other substrings and the protected words
     date = re.sub(r'\b(?!\d|\b' + '|'.join(protected_words) + r'\b)\w+\b', '', date, flags=re.IGNORECASE) # Remove all substrings that are not protected word or number
@@ -364,7 +365,7 @@ def _clean_date(date:str) -> str:
         date = f'00{date}'
     elif bool(re.match(r'^0[0-9]{2}( bc)?$', date)):
         date = f'0{date}'
-    if bool(re.match(r'[0-9]{4} bc', date)):
+    if bool(re.match(r'[0-9]{1,4} bc', date)):
         date = f'-{date}'
     date = date.replace('bc', '')
     date = ' '.join(date.split())

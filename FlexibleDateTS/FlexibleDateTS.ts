@@ -462,7 +462,7 @@ export default class FlexibleDate {
     private getCleanedDateAndNumFields(dateString: string): [AncientDateTime|Date, number] {
         const date = this.cleanDate(dateString);
 
-        if(/^-?[0-9]{4}$/.test(date)){
+        if(/^-?[0-9]{1,4}$/.test(date)){
             return [new AncientDateTime(parseInt(date, 10)), 1];
         }
 
@@ -528,7 +528,7 @@ export default class FlexibleDate {
             date = `0${date}`;
         }
     
-        if (/[0-9]{4} bc/.test(date)) {
+        if (/[0-9]{1,4} bc/.test(date)) {
             date = `-${date}`;
         }
     
