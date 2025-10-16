@@ -88,16 +88,18 @@ export default class FlexibleDate {
     }
 
     public inspect(): string {
-        let yearConversion = `${this.likelyYear ? Math.abs(this.likelyYear) : ''}`;
-
-        while (yearConversion.length < 4) {
-            yearConversion = `0${yearConversion}`;
-        }
-        if (this.likelyYear && this.likelyYear > 0) {
-            yearConversion = `+${yearConversion}`;
-        }
-        else if (this.likelyYear && this.likelyYear < 0) {
-            yearConversion = `-${yearConversion}`;
+        let yearConversion = "XXXX";
+        if (this.likelyYear !== null && this.likelyYear !== undefined) {
+            yearConversion = `${Math.abs(this.likelyYear)}`;
+            while (yearConversion.length < 4) {
+                yearConversion = `0${yearConversion}`;
+            }
+            if (this.likelyYear > 0) {
+                yearConversion = `+${yearConversion}`;
+            }
+            else if (this.likelyYear < 0) {
+                yearConversion = `-${yearConversion}`;
+            }
         }
         if (this.likelyDay && this.likelyMonth) {
             return `${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}-${this.likelyDay < 10 ? '0' : ''}${this.likelyDay}`;
@@ -361,7 +363,7 @@ export default class FlexibleDate {
 
             // Remove the year and find valid months
             const textA = this.substituteIthInstance(text, year, ' ', i).trim().replace(/\s{2,}/g, ' ');
-            const validMonths = this.findAllMatches(textA, ['[1-9]', '0[1-9]', '1[0-9]', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+            const validMonths = this.findAllMatches(textA, ['\b[1-9]\b', '\b0[1-9]\b', '\b1[0-2]\b', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
             const validMonthsAndInstances = this.getStringsAndInstances(validMonths);
 
             for (const [month, i] of validMonthsAndInstances) {
@@ -369,7 +371,7 @@ export default class FlexibleDate {
 
                 // Remove the month and find valid days
                 const textB = this.substituteIthInstance(textA, month, ' ', i).trim().replace(/\s{2,}/g, ' ');
-                const validDays = this.findAllMatches(textB, ['[1-9]', '0[1-9]', '1[0-9]', '2[0-9]', '3[01]']);
+                const validDays = this.findAllMatches(textB, ['\b[1-9]\b', '\b0[1-9]\b', '\b1[0-9]\b', '\b2[0-9]\b', '\b3[01]\b']);
 
                 for (const day of validDays) {
                     const monthNum = parseInt(month);
@@ -408,23 +410,18 @@ export default class FlexibleDate {
             .filter(([, score]) => score[0] === maxScore)
             .map(([option]) => option);
 
-        // Merging best options
-        for (let i = 0; i < bestOptions.length; i++) {
-            for (let j = i + 1; j < bestOptions.length; j++) {
-                let [yearA, monthA, dayA] = bestOptions[i];
-                const [yearB, monthB, dayB] = bestOptions[j];
-
-                yearA = yearA === yearB ? yearA : null;
-                if (monthA !== monthB || dayA !== dayB) {
-                    monthA = null;
-                    dayA = null;
-                }
-
-                bestOptions[i] = [yearA, monthA, dayA];
-                bestOptions[j] = [yearA, monthA, dayA];
-            }
-        }
-        return bestOptions[0];
+        const bestYears = bestOptions.map(option => parseInt(option[0] as string)).filter(year => year !== null);
+        const bestMonths = bestOptions.map(option => parseInt(option[1] as string)).filter(month => month !== null);
+        const bestDays = bestOptions.map(option => parseInt(option[2] as string)).filter(day => day !== null);
+        
+        const reasonableYear = bestYears.length > 0 ? this.chooseMostReasonableValue(bestYears) : null;
+        const reasonableMonth = bestMonths.length > 0 ? this.chooseMostReasonableValue(bestMonths) : null;
+        const reasonableDay = bestDays.length > 0 ? this.chooseMostReasonableValue(bestDays) : null;
+        
+        const bestYear = reasonableYear !== null ? String(reasonableYear) : null;
+        const bestMonth = reasonableMonth !== null ? String(reasonableMonth) : null;
+        const bestDay = reasonableDay !== null ? String(reasonableDay) : null;
+        return [bestYear, bestMonth, bestDay];
     }
 
     private getStringsAndInstances(stringList: string[]){
@@ -477,8 +474,15 @@ export default class FlexibleDate {
             return [parsedDate, numFields];
         }
 
+        console.error(`[DEBUG] year: ${year}`);
+        console.error(`[DEBUG] month: ${month}`);
+        console.error(`[DEBUG] day: ${day}`);
+
         const reconstructedDate = `${year} ${month || ""} ${day || ""}`.trim();
+        console.error(`[DEBUG] reconstructedDate: ${reconstructedDate}`);
         [parsedDate, numFields] = this.parseWithDateUtil(reconstructedDate);
+        console.error(`[DEBUG] parsedDate: ${parsedDate}`);
+        console.error(`[DEBUG] numFields: ${numFields}`);
         return [parsedDate, numFields];
     }
 

@@ -96,16 +96,20 @@ class FlexibleDate(BaseModel):
 
         Returns:
             str: the representation
-        """        
-        year_conversion = f'{abs(self.likely_year)}'
+        """
+        if self.likely_year is None: 
+            year_conversion = "XXXX"
+        else: 
+            year_conversion = f'{abs(self.likely_year)}'
 
-        while (len(year_conversion) < 4):
-            year_conversion = '0' + year_conversion
-        if self.likely_year and self.likely_year > 0:
-            year_conversion = f'+{year_conversion}'
-        elif self.likely_year and self.likely_year < 0:
-            year_conversion = f'-{year_conversion}'
+            while (len(year_conversion) < 4):
+                year_conversion = '0' + year_conversion
+            if self.likely_year > 0:
+                year_conversion = f'+{year_conversion}'
+            elif self.likely_year < 0:
+                year_conversion = f'-{year_conversion}'
 
+        
         if self.likely_day and self.likely_month:
             return f'{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}-{"0" if self.likely_day < 10 else ""}{self.likely_day}'
         elif self.likely_month:
@@ -418,17 +422,13 @@ def glean_year_month_day(text:str) -> tuple[str|None, str|None, str|None]:
     scores:dict[tuple[str|None, str|None, str|None], tuple[int, int]] = {option: key_func(option) for option in acceptable_combos}
     max_score = max(scores.values())
     best_options = [option for option, score in scores.items() if score == max_score]
-    for i in range(len(best_options)):
-        for j in range(i + 1, len(best_options)):
-            year_a, month_a, day_a = best_options[i]
-            year_b, month_b, day_b = best_options[j]
-            year_a = year_a if year_a == year_b else None
-            if (month_a != month_b) or (day_a != day_b):
-                month_a = None
-                day_a = None
-            best_options[i] = (year_a, month_a, day_a)
-            best_options[j] = (year_a, month_a, day_a)
-    return best_options[0]
+    best_years = [int(option[0]) for option in best_options if option[0] is not None]
+    best_months = [int(option[1]) for option in best_options if option[1] is not None]
+    best_days = [int(option[2]) for option in best_options if option[2] is not None]
+    best_year = str(_choose_most_resonable_value(best_years)) if best_years else None
+    best_month = str(_choose_most_resonable_value(best_months)) if best_months else None
+    best_day = str(_choose_most_resonable_value(best_days)) if best_days else None
+    return (best_year, best_month, best_day)
 
 def _get_acceptable_combos(text:str, valid_years_and_instances:list[tuple[str, int]]) -> set[tuple[str|None, str|None, str|None]]:
     """Gets the acceptable combos.
@@ -449,10 +449,12 @@ def _get_acceptable_combos(text:str, valid_years_and_instances:list[tuple[str, i
 
         # Find valid months (after removing year)
         text_a = _substitute_ith_isntance(text, year, ' ', i).strip().replace('  ', ' ')
-        valid_months = _find_all_matches(text_a, ['[1-9]', '0[1-9]', '1[0-9]', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+        valid_months = _find_all_matches(text_a, [r'\b[1-9]\b', r'\b0[1-9]\b', r'\b1[0-2]\b', r'Jan', r'Feb', r'Mar', r'Apr', r'May', r'Jun', r'Jul', r'Aug', r'Sep', r'Oct', r'Nov', r'Dec'])
         valid_months_and_instances = _get_strings_and_instances(valid_months)
 
         _add_month_and_day_combos(year, text_a, acceptable_combos, valid_months_and_instances)
+    
+    return acceptable_combos
 
 def _add_month_and_day_combos(year:str, text_a:str, acceptable_combos:set[tuple[str|None, str|None, str|None]], valid_months_and_instances:list[tuple[str, int]]) -> None:
     """Adds the month and day combos to the acceptable combos.
@@ -474,7 +476,7 @@ def _add_month_and_day_combos(year:str, text_a:str, acceptable_combos:set[tuple[
 
         # Find valid days (after removing days)
         text_b = _substitute_ith_isntance(text_a, month, ' ', i).strip().replace('  ', ' ')
-        valid_days = _find_all_matches(text_b, ['[1-9]', '0[1-9]', '1[0-9]', '2[0-9]', '3[01]'])
+        valid_days = _find_all_matches(text_b, [r'\b[1-9]\b', r'\b0[1-9]\b', r'\b1[0-9]\b', r'\b2[0-9]\b', r'\b3[01]\b'])
         for day in valid_days:
             # Append date combo if valid
             combo = (year, month, day)

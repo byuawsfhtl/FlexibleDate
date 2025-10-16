@@ -46,6 +46,16 @@ class TestEdgeCases:
                 "input": "-1000",
                 "expected": {"likelyYear": -1000, "likelyMonth": None, "likelyDay": None},
                 "description": "year 1000 BC"
+            },
+            {
+                "input": "50",
+                "expected": {"likelyYear": 50, "likelyMonth": None, "likelyDay": None},
+                "description": "year 50 AD (AncientDateTime path)"
+            },
+            {
+                "input": "-50",
+                "expected": {"likelyYear": -50, "likelyMonth": None, "likelyDay": None},
+                "description": "year 50 BC (AncientDateTime path)"
             }
         ]
         
@@ -106,6 +116,26 @@ class TestEdgeCases:
                 "input": "  2020-05-15  ",
                 "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
                 "description": "date with leading/trailing whitespace"
+            },
+            {
+                "input": "9",
+                "expected": {"likelyYear": 9, "likelyMonth": None, "likelyDay": None},
+                "description": "single digit year (zero-padding)"
+            },
+            {
+                "input": "85",
+                "expected": {"likelyYear": 85, "likelyMonth": None, "likelyDay": None},
+                "description": "two digit year (zero-padding)"
+            },
+            {
+                "input": "099",
+                "expected": {"likelyYear": 99, "likelyMonth": None, "likelyDay": None},
+                "description": "three digit year with leading zero (zero-padding)"
+            },
+            {
+                "input": "1000 bc",
+                "expected": {"likelyYear": -1000, "likelyMonth": None, "likelyDay": None},
+                "description": "year with BC suffix conversion"
             }
         ]
         
@@ -221,6 +251,71 @@ class TestEdgeCases:
         
         @pytest.mark.parametrize("test_case", special_char_cases, ids=lambda x: x['description'])
         def test_special_characters(self, test_case):
+            test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
+            
+            py_result, ts_result = test_runner.run_dual_test(
+                "create_flexible_date",
+                "createFlexibleDate",
+                test_data
+            )
+            
+            assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
+            assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
+            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+    
+    class TestParserEdgeCases:
+        """Test edge cases in _parse_with_date_util that trigger fallback to gleaning."""
+        
+        parser_edge_cases = [
+            {
+                "input": "0050",
+                "expected": {"likelyYear": 50, "likelyMonth": None, "likelyDay": None},
+                "description": "year 0050 triggers parser exception, falls back to gleaning"
+            },
+            {
+                "input": "50 bc",
+                "expected": {"likelyYear": -50, "likelyMonth": None, "likelyDay": None},
+                "description": "BC in input triggers parser exception, falls back to gleaning"
+            }
+        ]
+        
+        @pytest.mark.parametrize("test_case", parser_edge_cases, ids=lambda x: x['description'])
+        def test_parser_edge_cases(self, test_case):
+            test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
+            
+            py_result, ts_result = test_runner.run_dual_test(
+                "create_flexible_date",
+                "createFlexibleDate",
+                test_data
+            )
+            
+            assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
+            assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
+            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+    
+    class TestComplexDateGleaning:
+        """Test complex date gleaning scenarios with multiple possibilities."""
+        
+        complex_gleaning_cases = [
+            {
+                "input": "12 13 2020",
+                "expected": {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": 13},
+                "description": "ambiguous day/month numbers (exercises substitution logic)"
+            },
+            {
+                "input": "January February 2020",
+                "expected": {"likelyYear": 2020, "likelyMonth": 1, "likelyDay": None},
+                "description": "multiple month names (exercises _find_all_matches)"
+            },
+            {
+                "input": "15 May June 2020",
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "description": "day with multiple months (exercises month selection)"
+            }
+        ]
+        
+        @pytest.mark.parametrize("test_case", complex_gleaning_cases, ids=lambda x: x['description'])
+        def test_complex_gleaning(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = test_runner.run_dual_test(

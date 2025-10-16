@@ -46,6 +46,10 @@ class TestBoolMethod:
         }
     ]
     
+    # Note: NaN handling test (line 78) cannot be tested via public API
+    # since Pydantic validators enforce Optional[int] types, not float.
+    # The math.isnan check appears to be defensive programming.
+    
     @pytest.mark.parametrize("test_case", bool_test_cases, ids=lambda x: x['description'])
     def test_bool_method(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
@@ -220,6 +224,16 @@ class TestReprMethod:
             "input": {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": 31},
             "expected": "+2020-12-31",
             "description": "double digit month and day"
+        },
+        {
+            "input": {"likelyYear": 0, "likelyMonth": None, "likelyDay": None},
+            "expected": "0000",
+            "description": "year 0"
+        },
+        {
+            "input": {"likelyYear": None, "likelyMonth": 5, "likelyDay": None},
+            "expected": "XXXX-05",
+            "description": "month only (no year, no day)"
         }
     ]
     

@@ -46,6 +46,11 @@ class TestCreateFlexibleDate:
                 "input": "Born on March 15, 1990 in New York",
                 "expected": {"likelyYear": 1990, "likelyMonth": 3, "likelyDay": 15},
                 "description": "date embedded in text"
+            },
+            {
+                "input": "1990, 1991, or 1992",
+                "expected": {"likelyYear": 1991, "likelyMonth": None, "likelyDay": None},
+                "description": "multiple 4-digit years (tests glean_year_month_day scoring)"
             }
         ]
         
@@ -142,6 +147,41 @@ class TestCreateFlexibleDate:
             assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
             assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
             test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+    
+    class TestInvalidDatesExceptionHandling:
+        """Test handling of invalid dates that trigger exception handling."""
+        
+        invalid_date_cases = [
+            {
+                "input": "February 31, 2020",
+                "expected": {"likelyYear": 2020, "likelyMonth": 2, "likelyDay": None},
+                "description": "February 31st (invalid) falls back to year-month"
+            },
+            {
+                "input": "April 31, 2020",
+                "expected": {"likelyYear": 2020, "likelyMonth": 4, "likelyDay": None},
+                "description": "April 31st (invalid) falls back to year-month"
+            },
+            {
+                "input": "June 31, 2020",
+                "expected": {"likelyYear": 2020, "likelyMonth": 6, "likelyDay": None},
+                "description": "June 31st (invalid) falls back to year-month"
+            }
+        ]
+        
+        @pytest.mark.parametrize("test_case", invalid_date_cases, ids=lambda x: x['description'])
+        def test_invalid_date_exception_handling(self, test_case):
+            test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
+            
+            py_result, ts_result = test_runner.run_dual_test(
+                "create_flexible_date",
+                "createFlexibleDate",
+                test_data
+            )
+            
+            assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
+            assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
+            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestCreateFlexibleDateFromFormalDate:
@@ -215,6 +255,11 @@ class TestCreateFlexibleDateFromFormalDate:
                 "input": "1910/1920",
                 "expected": {"likelyYear": 1910, "likelyMonth": None, "likelyDay": None},
                 "description": "year range"
+            },
+            {
+                "input": "+1945",
+                "expected": {"likelyYear": 1945, "likelyMonth": None, "likelyDay": None},
+                "description": "year only with plus prefix"
             }
         ]
         
