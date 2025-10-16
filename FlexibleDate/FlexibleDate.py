@@ -257,11 +257,11 @@ def create_flexible_date(likely_date:str|None) -> FlexibleDate:
         FlexibleDate: the FlexibleDate object parsed from the input string
     """    
     # validate input
-    if likely_date is None:
-        fd = FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
-        return fd
+    if likely_date is None or likely_date.strip() == "":
+        return FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
     elif not isinstance(likely_date, str):
         raise ValueError('likely_date must be str or None')
+    
     # Defaults
     likely_day = None
     likely_month = None
