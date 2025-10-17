@@ -340,7 +340,7 @@ export default class FlexibleDate {
 
             parsedDate = new Date(date);
             if (isNaN(parsedDate.getTime())) {
-                parsedDate = new Date('9999 ' + date);
+                throw new Error('ParsingError: Date is invalid');
             }
 
             // In Python, if parse() raises ParserError, num_fields stays 0. This doesn't happen in TS.
@@ -426,23 +426,18 @@ export default class FlexibleDate {
             .filter(([, score]) => score[0] === maxScore)
             .map(([option]) => option);
 
-        // Merging best options
-        for (let i = 0; i < bestOptions.length; i++) {
-            for (let j = i + 1; j < bestOptions.length; j++) {
-                let [yearA, monthA, dayA] = bestOptions[i];
-                const [yearB, monthB, dayB] = bestOptions[j];
+        const bestYears = bestOptions.map(option => parseInt(option[0] as string)).filter(year => year !== null);
+        const bestMonths = bestOptions.map(option => parseInt(option[1] as string)).filter(month => month !== null);
+        const bestDays = bestOptions.map(option => parseInt(option[2] as string)).filter(day => day !== null);
+        
+        const reasonableYear = bestYears.length > 0 ? this.chooseMostReasonableValue(bestYears) : null;
+        const reasonableMonth = bestMonths.length > 0 ? this.chooseMostReasonableValue(bestMonths) : null;
+        const reasonableDay = bestDays.length > 0 ? this.chooseMostReasonableValue(bestDays) : null;
 
-                yearA = yearA === yearB ? yearA : null;
-                if (monthA !== monthB || dayA !== dayB) {
-                    monthA = null;
-                    dayA = null;
-                }
-
-                bestOptions[i] = [yearA, monthA, dayA];
-                bestOptions[j] = [yearA, monthA, dayA];
-            }
-        }
-        return bestOptions[0];
+        const bestYear = reasonableYear !== null ? String(reasonableYear) : null;
+        const bestMonth = reasonableMonth !== null ? String(reasonableMonth) : null;
+        const bestDay = reasonableDay !== null ? String(reasonableDay) : null;
+        return [bestYear, bestMonth, bestDay];
     }
 
     private getStringsAndInstances(stringList: string[]){
