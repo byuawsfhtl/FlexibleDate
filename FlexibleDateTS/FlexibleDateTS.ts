@@ -1,6 +1,6 @@
+import anyDateParser from 'any-date-parser';
 import { parse } from 'date-fns';
 import * as edtf from 'edtf';
-import chrono from 'chrono-node';
 
 type YearMonthDay = [string | null, string | null, string | null]
 
@@ -332,36 +332,42 @@ export default class FlexibleDate {
                 throw new Error('Date does not work for negative years');
             }
 
-            const parts = date.split(/\s+/).map(part => parseInt(part));
-            console.error(`[DEBUG] parts: ${JSON.stringify(parts)}`);
-
-            parsedDate = new Date(date);
-            console.error(`[DEBUG] parsedDate: ${parsedDate}`);
-            if (isNaN(parsedDate.getTime())) {
-                parsedDate = new Date('9999 ' + date);
-            }
-
-            // In Python, if parse() raises ParserError, num_fields stays 0. This doesn't happen in TS.
-            if (!isNaN(parsedDate.getTime())) {
-                numFields = date.split(/\s+/).length;
+            // Try parsing with any-date-parser first
+            let result = anyDateParser.attempt(date);
+            
+            if (result && !result.invalid && result.year !== undefined) {
+                parsedDate = new Date(
+                    result.year,
+                    (result.month || 1) - 1,  // month is 1-indexed in result
+                    result.day || 1,
+                    result.hour || 0,
+                    result.minute || 0,
+                    result.second || 0,
+                    result.millisecond || 0
+                );
                 
-                if (parsedDate.getFullYear() === 9999) {
-                    numFields += 1;
-                }
+                // Count fields based on what was actually parsed
+                numFields = 0;
+                if (result.year !== undefined) numFields++;
+                if (result.month !== undefined) numFields++;
+                if (result.day !== undefined) numFields++;
 
-                // Check to see if the parsed date rolled over to a new month or year (i.e. 31th of February became March 2nd, December 32nd became January 1st of the next year, etc.)
+                // Validate date rollover (e.g., Feb 31 -> Mar 3)
+                const parts = date.split(/\s+/).map(part => parseInt(part)).filter(n => !isNaN(n));
                 const parsedDayCorrectly = parts.includes(parsedDate.getUTCDate());
                 const parsedMonthCorrectly = parts.includes(parsedDate.getUTCMonth() + 1);
                 const parsedYearCorrectly = parts.includes(parsedDate.getUTCFullYear());
+                
                 if (numFields === 3 && parsedYearCorrectly && !(parsedMonthCorrectly && parsedDayCorrectly)) {
+                    // Date rolled over (invalid date), drop the day
                     parsedDate.setUTCMonth(parsedDate.getUTCMonth() - 1);
-                    numFields = 2; // Drop the day, keep only month and year
+                    numFields = 2;
                 }
             }
-
         } catch (error) {
-            console.error(`Error parsing date: ${error}`);
+            // Silent failure matches Python's try/except ParserError behavior
         }
+        
         return [parsedDate, numFields];
     }
 
@@ -479,24 +485,17 @@ export default class FlexibleDate {
             return [new AncientDateTime(parseInt(date, 10)), 1];
         }
 
-        console.error(`[DEBUG] date: ${date}`);
         let [parsedDate, numFields] = this.parseWithDateUtil(date);
         if (numFields !== 0){
             return [parsedDate, numFields];
         }
 
-        console.error(`[DEBUG] Initial parse attempt failed.`);
-
         const [year, month, day] = this.gleanYearMonthDay(date);
         if(year == null){
             return [parsedDate, numFields];
         }
-        console.error(`[DEBUG] year: ${year}`);
-        console.error(`[DEBUG] month: ${month}`);
-        console.error(`[DEBUG] day: ${day}`);
 
         const reconstructedDate = `${year} ${month || ""} ${day || ""}`.trim();
-        console.error(`[DEBUG] reconstructedDate: ${reconstructedDate}`);
         [parsedDate, numFields] = this.parseWithDateUtil(reconstructedDate);
         return [parsedDate, numFields];
     }
@@ -529,16 +528,8 @@ export default class FlexibleDate {
         date = date.replace(/\s{2,}/g, ' ').trim();
         date = date.replace(/[^\w\s]/g, ' ');
         date = date.replace(/(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/g, ' ');
-       
-        // Replace month abbreviations with two-digit numbers
-        const monthMap: { [key: string]: string } = {
-            'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
-            'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
-            'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
-        };
-        date = date.replace(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-zA-Z]*\b/gi, (match) => monthMap[match.slice(0,3).toLowerCase()]);
         
-        const protectedWords = ['bc'];
+        const protectedWords = ['bc', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
         const protectedRegex = new RegExp(`(${protectedWords.join('|')})`, 'gi');
         date = date.replace(protectedRegex, ' $1 ');
 

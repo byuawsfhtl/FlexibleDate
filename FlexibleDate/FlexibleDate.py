@@ -361,20 +361,7 @@ def _clean_date(date:str) -> str:
     date = date.replace('  ', ' ')
     date = re.sub(r'(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])', ' ', date) # Add spaces between letters and numbers to seperate them
     
-    # Replace month abbreviations with two-digit numbers
-    month_map = {
-        'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
-        'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
-        'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
-    }
-    date = re.sub(
-        r'\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?:[a-z]*)\b',
-        lambda m: month_map[m.group(1).lower()],
-        date,
-        flags=re.IGNORECASE
-    )
-    
-    protected_words = ['bc']
+    protected_words = ['bc', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
     date = re.sub(r'(' + '|'.join(protected_words) + r')', r' \1 ', date, flags=re.IGNORECASE) # Add spaces between all other substrings and the protected words
     date = re.sub(r'\b(?!\d|\b' + '|'.join(protected_words) + r'\b)\w+\b', '', date, flags=re.IGNORECASE) # Remove all substrings that are not protected word or number
     date = ' '.join(date.split())
