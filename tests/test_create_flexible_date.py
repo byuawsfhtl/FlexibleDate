@@ -88,6 +88,11 @@ class TestCreateFlexibleDate:
                 "description": "month only"
             },
             {
+                "input": "December 12",
+                "expected": {"likelyYear": None, "likelyMonth": 12, "likelyDay": 12},
+                "description": "month and day only"
+            },
+            {
                 "input": "The event happened sometime in July 2021",
                 "expected": {"likelyYear": 2021, "likelyMonth": 7, "likelyDay": None},
                 "description": "month and year in sentence"
