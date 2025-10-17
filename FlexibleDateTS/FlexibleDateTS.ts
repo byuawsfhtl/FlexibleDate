@@ -337,6 +337,7 @@ export default class FlexibleDate {
             if (date.toLowerCase().includes('bc')) {
                 throw new Error('Date does not work for negative years');
             }
+            const parts = date.split(/\s+/).map(part => parseInt(part));
 
             parsedDate = new Date(date);
             if (isNaN(parsedDate.getTime())) {
@@ -347,16 +348,16 @@ export default class FlexibleDate {
             if (!isNaN(parsedDate.getTime())) {
                 numFields = date.split(/\s+/).length;
                 
-                if (parsedDate.getFullYear() === 9999) {
-                    numFields += 1;
+                const parsedDayCorrectly = parts.includes(parsedDate.getUTCDate());
+                const parsedMonthCorrectly = parts.includes(parsedDate.getUTCMonth() + 1);
+                const parsedYearCorrectly = parts.includes(parsedDate.getUTCFullYear());
+                if (numFields === 3 && parsedYearCorrectly && !(parsedMonthCorrectly && parsedDayCorrectly)) {
+                    parsedDate.setUTCMonth(parsedDate.getUTCMonth() - 1);
+                    numFields = 2; // Drop the day, keep only month and year
                 }
             }
 
-        } catch (error) {
-            if (error instanceof Error) {
-                console.error(error.message);
-            }
-        }
+        } catch (error) {}
 
         return [parsedDate, numFields];
     }
@@ -379,7 +380,7 @@ export default class FlexibleDate {
 
             // Remove the year and find valid months
             const textA = this.substituteIthInstance(text, year, ' ', i).trim().replace(/\s{2,}/g, ' ');
-            const validMonths = this.findAllMatches(textA, ['\\b[1-9]\\b', '\\b0[1-9]\\b', '\\b1[0-9]\\b', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+            const validMonths = this.findAllMatches(textA, ['\\b[1-9]\\b', '\\b0[1-9]\\b', '\\b1[0-2]\\b', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
             const validMonthsAndInstances = this.getStringsAndInstances(validMonths);
 
             for (const [month, i] of validMonthsAndInstances) {

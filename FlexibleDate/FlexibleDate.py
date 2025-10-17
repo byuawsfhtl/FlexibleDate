@@ -412,6 +412,21 @@ def glean_year_month_day(text:str) -> tuple[str|None, str|None, str|None]:
         list[tuple[str|None, str|None, str|None]]: the options of year, month, day
     """
 
+    months_as_ints = {
+        "jan": 1,
+        "feb": 2,
+        "mar": 3,
+        "apr": 4,
+        "may": 5,
+        "jun": 6,
+        "jul": 7,
+        "aug": 8,
+        "sep": 9,
+        "oct": 10,
+        "nov": 11,
+        "dec": 12,
+    }
+
     valid_years = [match for match in re.findall(r'[-]?(?=(\d{4}))', text) if int(match) <= datetime.now().year] # overlapping 4 digits between 1000 and current year
     valid_years_and_instances = _get_strings_and_instances(valid_years)
     acceptable_combos = _get_acceptable_combos(text, valid_years_and_instances)
@@ -430,7 +445,7 @@ def glean_year_month_day(text:str) -> tuple[str|None, str|None, str|None]:
         if year is not None:
             best_years.append(int(year))
         if month is not None:
-            best_months.append(int(month))
+            best_months.append(months_as_ints[month])
         if day is not None:
             best_days.append(int(day))
         
@@ -458,7 +473,7 @@ def _get_acceptable_combos(text:str, valid_years_and_instances:list[tuple[str, i
 
         # Find valid months (after removing year)
         text_a = _substitute_ith_isntance(text, year, ' ', i).strip().replace('  ', ' ')
-        valid_months = _find_all_matches(text_a, [r'\b[1-9]\b', r'\b0[1-9]\b', r'\b1[0-2]\b'])
+        valid_months = _find_all_matches(text_a, [r'\b[1-9]\b', r'\b0[1-9]\b', r'\b1[0-2]\b', r'jan', r'feb', r'mar', r'apr', r'may', r'jun', r'jul', r'aug', r'sep', r'oct', r'nov', r'dec'])
         valid_months_and_instances = _get_strings_and_instances(valid_months)
 
         _add_month_and_day_combos(year, text_a, acceptable_combos, valid_months_and_instances)
