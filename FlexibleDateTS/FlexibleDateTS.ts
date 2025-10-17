@@ -1,4 +1,3 @@
-import anyDateParser from 'any-date-parser';
 import { parse } from 'date-fns';
 import * as edtf from 'edtf';
 
@@ -47,11 +46,10 @@ export default class FlexibleDate {
         this.likelyMonth = arg2 ?? null;
         this.likelyYear = arg3 ?? null;
       }
-      
-      // Validate fields
+
       this.validateFields();
     }
-    
+
     private validateFields(): void {
 
         const monthsWith31Days = [1, 3, 5, 7, 8, 10, 12];
@@ -79,6 +77,9 @@ export default class FlexibleDate {
                 if (this.likelyDay < 1 || this.likelyDay > maxDaysInMonth) {
                     throw new Error('likely_day must be between 1 and ' + maxDaysInMonth);
                 }
+            }
+            if (this.likelyDay < 1 || this.likelyDay > 31) {
+                throw new Error('likely_day must be between 1 and 31');
             }
         }
     }
@@ -119,6 +120,12 @@ export default class FlexibleDate {
         else {
             return `${yearConversion}`;
         }
+    }
+
+    valueOf(): boolean {
+        //eslint-disable-next-line
+        const isNull = (val: any) => val === null || (typeof val === 'number' && isNaN(val));
+        return !(isNull(this.likelyDay) && isNull(this.likelyMonth) && isNull(this.likelyYear));
     }
 
     public createFlexibleDate(likelyDate : string | null | undefined){
@@ -312,13 +319,12 @@ export default class FlexibleDate {
         const year = allYears.length > 0 ? this.chooseMostReasonableValue(allYears) : null;
         const month = allMonths.length > 0 ? this.chooseMostReasonableValue(allMonths) : null;
         const day = allDays.length > 0 ? this.chooseMostReasonableValue(allDays) : null;
-        
+
         return new FlexibleDate(day, month, year);
     }
 
     private parseWithDateUtil(likelyDate: string): [Date, number] {
-        // Match Python: parsed_date = parse('1-1-0001')
-        let parsedDate = new Date(1, 0, 1);
+        let parsedDate = new Date('0001-01-01');
         let numFields = 0;
 
         try {
@@ -332,42 +338,26 @@ export default class FlexibleDate {
                 throw new Error('Date does not work for negative years');
             }
 
-            // Try parsing with any-date-parser first
-            let result = anyDateParser.attempt(date);
-            
-            if (result && !result.invalid && result.year !== undefined) {
-                parsedDate = new Date(
-                    result.year,
-                    (result.month || 1) - 1,  // month is 1-indexed in result
-                    result.day || 1,
-                    result.hour || 0,
-                    result.minute || 0,
-                    result.second || 0,
-                    result.millisecond || 0
-                );
-                
-                // Count fields based on what was actually parsed
-                numFields = 0;
-                if (result.year !== undefined) numFields++;
-                if (result.month !== undefined) numFields++;
-                if (result.day !== undefined) numFields++;
+            parsedDate = new Date(date);
+            if (isNaN(parsedDate.getTime())) {
+                parsedDate = new Date('9999 ' + date);
+            }
 
-                // Validate date rollover (e.g., Feb 31 -> Mar 3)
-                const parts = date.split(/\s+/).map(part => parseInt(part)).filter(n => !isNaN(n));
-                const parsedDayCorrectly = parts.includes(parsedDate.getUTCDate());
-                const parsedMonthCorrectly = parts.includes(parsedDate.getUTCMonth() + 1);
-                const parsedYearCorrectly = parts.includes(parsedDate.getUTCFullYear());
+            // In Python, if parse() raises ParserError, num_fields stays 0. This doesn't happen in TS.
+            if (!isNaN(parsedDate.getTime())) {
+                numFields = date.split(/\s+/).length;
                 
-                if (numFields === 3 && parsedYearCorrectly && !(parsedMonthCorrectly && parsedDayCorrectly)) {
-                    // Date rolled over (invalid date), drop the day
-                    parsedDate.setUTCMonth(parsedDate.getUTCMonth() - 1);
-                    numFields = 2;
+                if (parsedDate.getFullYear() === 9999) {
+                    numFields += 1;
                 }
             }
+
         } catch (error) {
-            // Silent failure matches Python's try/except ParserError behavior
+            if (error instanceof Error) {
+                console.error(error.message);
+            }
         }
-        
+
         return [parsedDate, numFields];
     }
 
@@ -383,19 +373,22 @@ export default class FlexibleDate {
             .filter(year => parseInt(year) <= currentYear);
 
         const validYearsAndInstances = this.getStringsAndInstances(validYears);
+
         for (const [year, i] of validYearsAndInstances) {
             acceptableCombos.add([year, null, null]);
 
             // Remove the year and find valid months
             const textA = this.substituteIthInstance(text, year, ' ', i).trim().replace(/\s{2,}/g, ' ');
-            const validMonths = this.findAllMatches(textA, ['\\b[1-9]\\b', '\\b0[1-9]\\b', '\\b1[0-2]\\b']);
+            const validMonths = this.findAllMatches(textA, ['\\b[1-9]\\b', '\\b0[1-9]\\b', '\\b1[0-9]\\b', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
             const validMonthsAndInstances = this.getStringsAndInstances(validMonths);
+
             for (const [month, i] of validMonthsAndInstances) {
                 acceptableCombos.add([year, month, null]);
 
                 // Remove the month and find valid days
                 const textB = this.substituteIthInstance(textA, month, ' ', i).trim().replace(/\s{2,}/g, ' ');
                 const validDays = this.findAllMatches(textB, ['\\b[1-9]\\b', '\\b0[1-9]\\b', '\\b1[0-9]\\b', '\\b2[0-9]\\b', '\\b3[01]\\b']);
+
                 for (const day of validDays) {
                     const monthNum = parseInt(month);
                     const dayNum = parseInt(day);
@@ -432,19 +425,24 @@ export default class FlexibleDate {
         const bestOptions = [...scores.entries()]
             .filter(([, score]) => score[0] === maxScore)
             .map(([option]) => option);
-        
-        const bestYears = bestOptions.map(option => parseInt(option[0] as string)).filter(year => year !== null);
-        const bestMonths = bestOptions.map(option => parseInt(option[1] as string)).filter(month => month !== null);
-        const bestDays = bestOptions.map(option => parseInt(option[2] as string)).filter(day => day !== null);
-        
-        const reasonableYear = bestYears.length > 0 ? this.chooseMostReasonableValue(bestYears) : null;
-        const reasonableMonth = bestMonths.length > 0 ? this.chooseMostReasonableValue(bestMonths) : null;
-        const reasonableDay = bestDays.length > 0 ? this.chooseMostReasonableValue(bestDays) : null;
 
-        const bestYear = reasonableYear !== null ? String(reasonableYear) : null;
-        const bestMonth = reasonableMonth !== null ? String(reasonableMonth) : null;
-        const bestDay = reasonableDay !== null ? String(reasonableDay) : null;
-        return [bestYear, bestMonth, bestDay];
+        // Merging best options
+        for (let i = 0; i < bestOptions.length; i++) {
+            for (let j = i + 1; j < bestOptions.length; j++) {
+                let [yearA, monthA, dayA] = bestOptions[i];
+                const [yearB, monthB, dayB] = bestOptions[j];
+
+                yearA = yearA === yearB ? yearA : null;
+                if (monthA !== monthB || dayA !== dayB) {
+                    monthA = null;
+                    dayA = null;
+                }
+
+                bestOptions[i] = [yearA, monthA, dayA];
+                bestOptions[j] = [yearA, monthA, dayA];
+            }
+        }
+        return bestOptions[0];
     }
 
     private getStringsAndInstances(stringList: string[]){
@@ -481,11 +479,13 @@ export default class FlexibleDate {
 
     private getCleanedDateAndNumFields(dateString: string): [AncientDateTime|Date, number] {
         const date = this.cleanDate(dateString);
-        if(/^-?[0-9]{1,4}$/.test(date)){
+
+        if(/^-?[0-9]{4}$/.test(date)){
             return [new AncientDateTime(parseInt(date, 10)), 1];
         }
 
         let [parsedDate, numFields] = this.parseWithDateUtil(date);
+
         if (numFields !== 0){
             return [parsedDate, numFields];
         }
@@ -528,8 +528,8 @@ export default class FlexibleDate {
         date = date.replace(/\s{2,}/g, ' ').trim();
         date = date.replace(/[^\w\s]/g, ' ');
         date = date.replace(/(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/g, ' ');
-        
-        const protectedWords = ['bc', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+       
+        const protectedWords = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'bc'];
         const protectedRegex = new RegExp(`(${protectedWords.join('|')})`, 'gi');
         date = date.replace(protectedRegex, ' $1 ');
 
@@ -546,7 +546,7 @@ export default class FlexibleDate {
             date = `0${date}`;
         }
     
-        if (/[0-9]{1,4} bc/.test(date)) {
+        if (/[0-9]{4} bc/.test(date)) {
             date = `-${date}`;
         }
     
@@ -554,9 +554,4 @@ export default class FlexibleDate {
         return date;
     }
 
-    valueOf(): boolean {
-        //eslint-disable-next-line
-        const isNull = (val: any) => val === null || (typeof val === 'number' && isNaN(val));
-        return !(isNull(this.likelyDay) && isNull(this.likelyMonth) && isNull(this.likelyYear));
-    }
 }
