@@ -361,7 +361,20 @@ def _clean_date(date:str) -> str:
     date = date.replace('  ', ' ')
     date = re.sub(r'(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])', ' ', date) # Add spaces between letters and numbers to seperate them
     
-    protected_words = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'bc']
+    # Replace month abbreviations with two-digit numbers
+    month_map = {
+        'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+        'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+        'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+    }
+    date = re.sub(
+        r'\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?:[a-z]*)\b',
+        lambda m: month_map[m.group(1).lower()],
+        date,
+        flags=re.IGNORECASE
+    )
+    
+    protected_words = ['bc']
     date = re.sub(r'(' + '|'.join(protected_words) + r')', r' \1 ', date, flags=re.IGNORECASE) # Add spaces between all other substrings and the protected words
     date = re.sub(r'\b(?!\d|\b' + '|'.join(protected_words) + r'\b)\w+\b', '', date, flags=re.IGNORECASE) # Remove all substrings that are not protected word or number
     date = ' '.join(date.split())
@@ -422,9 +435,18 @@ def glean_year_month_day(text:str) -> tuple[str|None, str|None, str|None]:
     scores:dict[tuple[str|None, str|None, str|None], tuple[int, int]] = {option: key_func(option) for option in acceptable_combos}
     max_score = max(scores.values())
     best_options = [option for option, score in scores.items() if score == max_score]
-    best_years = [int(option[0]) for option in best_options if option[0] is not None]
-    best_months = [int(option[1]) for option in best_options if option[1] is not None]
-    best_days = [int(option[2]) for option in best_options if option[2] is not None]
+    best_years = []
+    best_months = []
+    best_days = []
+
+    for year, month, day in best_options:
+        if year is not None:
+            best_years.append(int(year))
+        if month is not None:
+            best_months.append(int(month))
+        if day is not None:
+            best_days.append(int(day))
+        
     best_year = str(_choose_most_resonable_value(best_years)) if best_years else None
     best_month = str(_choose_most_resonable_value(best_months)) if best_months else None
     best_day = str(_choose_most_resonable_value(best_days)) if best_days else None
@@ -449,7 +471,7 @@ def _get_acceptable_combos(text:str, valid_years_and_instances:list[tuple[str, i
 
         # Find valid months (after removing year)
         text_a = _substitute_ith_isntance(text, year, ' ', i).strip().replace('  ', ' ')
-        valid_months = _find_all_matches(text_a, [r'\b[1-9]\b', r'\b0[1-9]\b', r'\b1[0-2]\b', r'Jan', r'Feb', r'Mar', r'Apr', r'May', r'Jun', r'Jul', r'Aug', r'Sep', r'Oct', r'Nov', r'Dec'])
+        valid_months = _find_all_matches(text_a, [r'\b[1-9]\b', r'\b0[1-9]\b', r'\b1[0-2]\b'])
         valid_months_and_instances = _get_strings_and_instances(valid_months)
 
         _add_month_and_day_combos(year, text_a, acceptable_combos, valid_months_and_instances)

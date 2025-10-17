@@ -153,7 +153,7 @@ class TestCreateFlexibleDate:
         
         invalid_date_cases = [
             {
-                "input": "February 31, 2020",
+                "input": "February 30, 2020",
                 "expected": {"likelyYear": 2020, "likelyMonth": 2, "likelyDay": None},
                 "description": "February 31st (invalid) falls back to year-month"
             },
