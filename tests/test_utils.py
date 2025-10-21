@@ -6,6 +6,8 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, Optional
 from unittest.mock import patch, MagicMock
+import threading
+
 
 # Add the FlexibleDate module to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'FlexibleDate'))
@@ -111,11 +113,28 @@ class FlexibleDateTestRunner:
         input_data = test_data["input"]
         mocks = test_data.get("mocks", {})
         
-        # Run Python function with mocking
-        py_result = self._call_python_function_with_mocks(python_function, input_data, mocks.get("python", {}))
-        
-        # Run TypeScript function with mocking
-        ts_result = self._call_typescript_function_with_mocks(ts_function, input_data, mocks.get("typescript", {}))
+        py_result_holder = {}
+        ts_result_holder = {}
+
+        def run_python():
+            py_result_holder["result"] = self._call_python_function_with_mocks(
+                python_function, input_data, mocks.get("python", {})
+            )
+
+        def run_typescript():
+            ts_result_holder["result"] = self._call_typescript_function_with_mocks(
+                ts_function, input_data, mocks.get("typescript", {})
+            )
+
+        t_py = threading.Thread(target=run_python)
+        t_ts = threading.Thread(target=run_typescript)
+        t_py.start()
+        t_ts.start()
+        t_py.join()
+        t_ts.join()
+
+        py_result = py_result_holder["result"]
+        ts_result = ts_result_holder["result"]
         
         return py_result, ts_result
     

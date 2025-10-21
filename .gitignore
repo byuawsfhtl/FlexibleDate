@@ -1,6 +1,7 @@
 __pycache__/
 .vscode/
 .DS_Store
+.coverage
 **/.DS_Store
 FlexibleDate/Test Files
 FlexibleDate/test/

@@ -15,6 +15,7 @@
   "type": "commonjs",
   "dependencies": {
     "any-date-parser": "^1.5.4",
+    "date-fns": "^2.30.0",
     "edtf": "^4.9.0"
   },
   "devDependencies": {
