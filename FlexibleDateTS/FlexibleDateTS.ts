@@ -541,13 +541,13 @@ export default class FlexibleDate {
             date = date.replace(/([01]?[0-9]|2[0-3]):[0-5][0-9]/g, ' ');
         }
         
-        date = date.replace('/', ' ');
-        date = date.replace(',', ' ');
-        date = date.replace('.', ' ');
-        date = date.replace('"', ' ');
-        date = date.replace("'", ' ');
-        date = date.replace('-', ' ');
-        date = date.replace('_', ' ');
+        date = date.replace(/\//g, ' ');
+        date = date.replace(/,/g, ' ');
+        date = date.replace(/\./g, ' ');
+        date = date.replace(/"/g, ' ');
+        date = date.replace(/'/g, ' ');
+        date = date.replace(/-/g, ' ');
+        date = date.replace(/_/g, ' ');
 
         date = date.replace(/\s{2,}/g, ' ').trim();
         date = date.replace(/[^\w\s]/g, ' ');
