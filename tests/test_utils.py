@@ -105,25 +105,26 @@ class FlexibleDateTestRunner:
         Args:
             python_function: Name of the Python function to test
             ts_function: Name of the TypeScript function to test
-            test_data: Dictionary containing 'input', 'expected', and optional 'mocks'
+            test_data: Dictionary containing 'input', 'expected', and optional 'mocks' and 'expected_error'
         
         Returns:
             Tuple of (python_result, typescript_result)
         """
         input_data = test_data["input"]
         mocks = test_data.get("mocks", {})
+        expected_error = test_data.get("expected_error", False)
         
         py_result_holder = {}
         ts_result_holder = {}
 
         def run_python():
             py_result_holder["result"] = self._call_python_function_with_mocks(
-                python_function, input_data, mocks.get("python", {})
+                python_function, input_data, mocks.get("python", {}), expected_error
             )
 
         def run_typescript():
             ts_result_holder["result"] = self._call_typescript_function_with_mocks(
-                ts_function, input_data, mocks.get("typescript", {})
+                ts_function, input_data, mocks.get("typescript", {}), expected_error
             )
 
         t_py = threading.Thread(target=run_python)
@@ -133,12 +134,12 @@ class FlexibleDateTestRunner:
         t_py.join()
         t_ts.join()
 
-        py_result = py_result_holder["result"]
-        ts_result = ts_result_holder["result"]
+        py_result = py_result_holder["result"] if "result" in py_result_holder else None
+        ts_result = ts_result_holder["result"] if "result" in ts_result_holder else None
         
         return py_result, ts_result
     
-    def _call_python_function_with_mocks(self, function_name: str, input_data: Any, mocks: Dict[str, Any]) -> Any:
+    def _call_python_function_with_mocks(self, function_name: str, input_data: Any, mocks: Dict[str, Any], expected_error: bool = False) -> Any:
         """Call a Python function with optional mocking."""
         try:
             # Apply mocks if provided
@@ -193,9 +194,12 @@ class FlexibleDateTestRunner:
                     mock_context.__exit__(None, None, None)
                     
         except Exception as e:
+            if expected_error:
+                # Return a standardized error representation
+                return {"error": True, "error_type": type(e).__name__, "error_message": str(e)}
             raise RuntimeError(f"Python function {function_name} failed: {str(e)}")
     
-    def _call_typescript_function_with_mocks(self, function_name: str, input_data: Any, mocks: Dict[str, Any]) -> Any:
+    def _call_typescript_function_with_mocks(self, function_name: str, input_data: Any, mocks: Dict[str, Any], expected_error: bool = False) -> Any:
         """Call a TypeScript function via subprocess with optional mocking."""
         try:
             # For combineFlexibleDates, input_data is a list of dates that should be passed as a single argument
@@ -230,13 +234,20 @@ class FlexibleDateTestRunner:
             response = json.loads(result.stdout)
             
             if not response.get("success", False):
+                if expected_error:
+                    # Return a standardized error representation
+                    return {"error": True, "error_type": "Error", "error_message": response.get('error', 'Unknown error')}
                 raise RuntimeError(f"TypeScript function failed: {response.get('error', 'Unknown error')}")
             
             return response["result"]
             
         except json.JSONDecodeError as e:
+            if expected_error:
+                return {"error": True, "error_type": "JSONDecodeError", "error_message": str(e)}
             raise RuntimeError(f"Failed to parse TypeScript response: {str(e)}")
         except Exception as e:
+            if expected_error:
+                return {"error": True, "error_type": type(e).__name__, "error_message": str(e)}
             raise RuntimeError(f"TypeScript function {function_name} failed: {str(e)}")
     
     def _serialize_flexible_date(self, fd: FlexibleDate) -> Dict[str, Any]:
@@ -264,6 +275,7 @@ class FlexibleDateTestRunner:
         - Field presence and ordering (for dictionaries)
         - Null/None representation consistency
         - No extra metadata fields
+        - Error state consistency (both errored or both succeeded)
         
         Args:
             py_result: Result from Python implementation
@@ -272,6 +284,12 @@ class FlexibleDateTestRunner:
         Returns:
             bool: True if results are strictly identical, False otherwise
         """
+        # Special handling for error results
+        if isinstance(py_result, dict) and isinstance(ts_result, dict):
+            # If both are error results, they match if both have error=True
+            if py_result.get("error") is True and ts_result.get("error") is True:
+                return True
+        
         # Basic equality check
         if py_result != ts_result:
             return False

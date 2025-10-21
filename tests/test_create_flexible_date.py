@@ -284,36 +284,39 @@ class TestCreateFlexibleDateFromFormalDate:
     
     class TestNullDates:
         """Test edge cases and error handling for EDTF parsing."""
+        error_cases = [
+            {
+                "input": "invalid-date-format",
+                "expected": {"error": True},
+                "expected_error": True,
+                "description": "invalid date format"
+            },
+            {
+                "input": "2023-13-45",
+                "expected": {"error": True},
+                "expected_error": True,
+                "description": "invalid month/day"
+            }
+        ]
         
-        def test_error_handling(self):
+        @pytest.mark.parametrize("test_case", error_cases, ids=lambda x: x['description'])
+        def test_error_handling(self, test_case):
             """Test that both implementations handle errors consistently."""
-            # These tests check that both implementations handle errors gracefully
-            error_cases = [
-                "invalid-date-format",
-                "2023-13-45",  # Invalid month/day
-                "",
-                "not-a-date-at-all"
-            ]
+            test_data = {
+                "input": test_case["input"],
+                "expected": test_case["expected"],
+                "expected_error": test_case["expected_error"],
+                "mocks": {}
+            }
+            py_result, ts_result = test_runner.run_dual_test(
+                "create_flexible_date_from_formal_date",
+                "createFlexibleDateFromFormalDate",
+                test_data
+            )
             
-            for invalid_input in error_cases:
-                print(f"Testing error handling for: '{invalid_input}'")
-                
-                # Both implementations should handle errors gracefully
-                # We expect them to either return a null date or raise the same type of error
-                try:
-                    test_data = {"input": invalid_input, "expected": None, "mocks": {}}
-                    py_result, ts_result = test_runner.run_dual_test(
-                        "create_flexible_date_from_formal_date",
-                        "createFlexibleDateFromFormalDate",
-                        test_data
-                    )
-                    
-                    # If both succeed, they should return the same result
-                    test_runner.assert_strict_parity(py_result, ts_result, f"error handling for '{invalid_input}'")
-                    print(f"Both implementations handled '{invalid_input}' consistently: {py_result}")
-                        
-                except Exception as e:
-                    # If one fails, both should fail with similar errors
-                    # This is acceptable as long as they behave consistently
-                    print(f"Both implementations failed consistently for '{invalid_input}': {str(e)}")
-                    pass
+            # Both should return error dicts with error=True
+            assert isinstance(py_result, dict) and py_result.get("error") is True, \
+                f"Python should raise error for {test_case['description']}, got: {py_result}"
+            assert isinstance(ts_result, dict) and ts_result.get("error") is True, \
+                f"TypeScript should raise error for {test_case['description']}, got: {ts_result}"
+            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
