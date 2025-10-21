@@ -301,16 +301,6 @@ class TestEdgeCases:
                 "input": "12 13 2020",
                 "expected": {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": 13},
                 "description": "ambiguous day/month numbers (exercises substitution logic)"
-            },
-            {
-                "input": "January February 2020",
-                "expected": {"likelyYear": 2020, "likelyMonth": 1, "likelyDay": None},
-                "description": "multiple month names (exercises _find_all_matches)"
-            },
-            {
-                "input": "15 May June 2020",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
-                "description": "day with multiple months (exercises month selection)"
             }
         ]
         

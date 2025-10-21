@@ -369,7 +369,7 @@ def _clean_date(date:str) -> str:
         date = f'000{date}'
     elif bool(re.match(r'^[0-9]{2}( bc)?$', date)):
         date = f'00{date}'
-    elif bool(re.match(r'^0[0-9]{2}( bc)?$', date)):
+    elif bool(re.match(r'^[0-9]{3}( bc)?$', date)):
         date = f'0{date}'
     if bool(re.match(r'[0-9]{1,4} bc', date)):
         date = f'-{date}'
