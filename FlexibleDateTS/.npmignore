@@ -1,0 +1,7 @@
+*.ts
+!*.d.ts
+tsconfig.json
+test_bridge.ts
+test_bridge.js
+node_modules/
+

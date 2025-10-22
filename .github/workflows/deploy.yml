@@ -23,8 +23,8 @@ jobs:
           token: ${{ secrets.RLL_BOT_PA_TOKEN }}
           versionPath: ${{ github.workspace }}/_version.py
 
-  build:
-    name: Build distribution 📦
+  build-python:
+    name: Build Python distribution 📦
     if: github.ref == 'refs/heads/prd' # Only publish when pushing to prd
     needs: update-version
     runs-on: ubuntu-latest
@@ -51,7 +51,7 @@ jobs:
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
     if: github.ref == 'refs/heads/prd' # Only publish when pushing to prd
-    needs: build
+    needs: build-python
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -72,3 +72,60 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_ACCESS_TOKEN }}
+
+  build-typescript:
+    name: Build TypeScript distribution 📦
+    if: github.ref == 'refs/heads/prd' # Only publish when pushing to prd
+    needs: update-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Sync version from _version.py to package.json
+        run: |
+          VERSION=$(python3 -c "exec(open('_version.py').read()); print(__version__)")
+          cd FlexibleDateTS
+          npm version $VERSION --no-git-tag-version --allow-same-version
+      - name: Install dependencies
+        working-directory: ./FlexibleDateTS
+        run: npm ci
+      - name: Build TypeScript
+        working-directory: ./FlexibleDateTS
+        run: npm run build
+      - name: Store the TypeScript distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: typescript-package-distributions
+          path: FlexibleDateTS/
+
+  publish-to-npm:
+    name: Publish TypeScript 📘 distribution 📦 to npm
+    if: github.ref == 'refs/heads/prd' # Only publish when pushing to prd
+    needs: build-typescript
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Download TypeScript distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: typescript-package-distributions
+          path: FlexibleDateTS/
+      - name: Verify dist exists
+        run: ls -l FlexibleDateTS/dist/
+      - name: Publish to npm
+        working-directory: ./FlexibleDateTS
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
