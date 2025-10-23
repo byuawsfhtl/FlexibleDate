@@ -1,0 +1,45 @@
+{
+  "name": "flexibledatets",
+  "version": "1.0.5",
+  "description": "TypeScript library for fuzzy date comparisons using EDTF (Extended Date/Time Format)",
+  "main": "dist/FlexibleDateTS.js",
+  "types": "dist/FlexibleDateTS.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "nyc --reporter=json --reporter=text jest",
+    "test-bridge": "tsc && node dist/test_bridge.js",
+    "coverage": "nyc report --reporter=json",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "date",
+    "flexible",
+    "fuzzy",
+    "comparison",
+    "edtf",
+    "extended-date-time-format",
+    "date-parser",
+    "uncertain-dates"
+  ],
+  "author": "Record Linking Lab",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/byuawsfhtl/FlexibleDate.git"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "any-date-parser": "^1.5.4",
+    "date-fns": "^2.30.0",
+    "edtf": "^4.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "nyc": "^17.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
