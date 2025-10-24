@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include _version.py
+recursive-include FlexibleDate *.py *.json *.txt
+
+# Explicitly exclude TypeScript directory
+global-exclude FlexibleDateTS/*
+prune FlexibleDateTS
+
