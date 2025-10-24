@@ -18,7 +18,7 @@ jobs:
     permissions: write-all
     steps:
       - name: Update Version
-        uses: byuawsfhtl/UpdateVersion@v1.0.7
+        uses: byuawsfhtl/UpdateVersion@v1.0.8
         with:
           token: ${{ secrets.RLL_BOT_PA_TOKEN }}
           versionPath: ${{ github.workspace }}/_version.py
