@@ -445,7 +445,7 @@ def glean_year_month_day(text:str) -> tuple[str|None, str|None, str|None]:
         if year is not None:
             best_years.append(int(year))
         if month is not None:
-            best_months.append(months_as_ints[month])
+            best_months.append(months_as_ints.get(month, month))
         if day is not None:
             best_days.append(int(day))
         
