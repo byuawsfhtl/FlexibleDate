@@ -11,10 +11,6 @@ on:
       - "**/tests/*"
       - "**/_version.py"
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   update-version:
     name: Update Version
@@ -114,30 +110,22 @@ jobs:
     if: github.ref == 'refs/heads/prd' # Only publish when pushing to prd
     needs: build-typescript
     runs-on: ubuntu-latest
-    environment:
-      name: npm
-      url: https://www.npmjs.com/package/flexibledatets
 
     steps:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
-          always-auth: true
-        
-      - name: Ensure npm supports OIDC (upgrade if needed)
-        run: npm install -g "npm@^11.5.1"
-
       - name: Download TypeScript distribution
         uses: actions/download-artifact@v4
         with:
           name: typescript-package-distributions
           path: FlexibleDateTS/
-
       - name: Verify dist exists
         run: ls -l FlexibleDateTS/dist/
-
       - name: Publish to npm
         working-directory: ./FlexibleDateTS
-        run: NPM_CONFIG_PROVENANCE=false npm publish --access public
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Token will expire every 90 days. Will have to update this token periodically.
