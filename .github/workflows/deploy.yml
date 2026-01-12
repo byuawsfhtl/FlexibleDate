@@ -112,9 +112,10 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: npm
-      url: https://npmjs.org/p/FlexibleDateTS
+      url: https://www.npmjs.com/package/flexibledatets
     permissions:
       id-token: write
+      contents: read
 
     steps:
       - name: Set up Node.js
@@ -132,5 +133,3 @@ jobs:
       - name: Publish to npm
         working-directory: ./FlexibleDateTS
         run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
