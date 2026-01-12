@@ -128,6 +128,13 @@ export default class FlexibleDate {
         return !(isNull(this.likelyDay) && isNull(this.likelyMonth) && isNull(this.likelyYear));
     }
 
+    public equals(obj: object): boolean {
+        if (!obj || !(obj instanceof FlexibleDate)) {
+            return false;
+        }
+        return this.likelyDay === obj.likelyDay && this.likelyMonth === obj.likelyMonth && this.likelyYear === obj.likelyYear;
+    }
+
     public createFlexibleDate(likelyDate : string | null | undefined){
         if( likelyDate == null || likelyDate == undefined || likelyDate.trim() == ""){
             return new FlexibleDate(null, null, null);
