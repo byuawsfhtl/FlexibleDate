@@ -11,6 +11,10 @@ on:
       - "**/tests/*"
       - "**/_version.py"
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   update-version:
     name: Update Version
@@ -113,9 +117,6 @@ jobs:
     environment:
       name: npm
       url: https://www.npmjs.com/package/flexibledatets
-    permissions:
-      id-token: write
-      contents: read
 
     steps:
       - name: Set up Node.js
@@ -123,13 +124,16 @@ jobs:
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
+
       - name: Download TypeScript distribution
         uses: actions/download-artifact@v4
         with:
           name: typescript-package-distributions
           path: FlexibleDateTS/
+
       - name: Verify dist exists
         run: ls -l FlexibleDateTS/dist/
+
       - name: Publish to npm
         working-directory: ./FlexibleDateTS
-        run: npm publish
+        run: npm publish --access public
