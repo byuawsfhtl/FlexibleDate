@@ -239,26 +239,9 @@ def create_flexible_date_from_formal_date(formal_date: str) -> FlexibleDate:
 
         if upper_date is not None:
             [start_part, end_part] = cleaned_date.split('/')
-            get_upper_month_range = lambda month: 28 if month == 2 else 30 if month in [4, 6, 9, 11] else 31
 
-            is_year_range = (
-                (len(start_part) == 4 and 
-                len(end_part) == 4 and 
-                start_part.isdigit() and 
-                end_part.isdigit()) 
-                or 
-                (lower_date.tm_mon == 1 and 
-                upper_date.tm_mon == 12 and 
-                lower_date.tm_year == upper_date.tm_year)
-            )
-            is_month_range = (
-                len(start_part) == 6 and 
-                len(end_part) == 6 and
-                lower_date.tm_year == upper_date.tm_year and
-                lower_date.tm_mon == upper_date.tm_mon and
-                lower_date.tm_mday == 1 and
-                upper_date.tm_mday >= get_upper_month_range(upper_date.tm_mon)
-            )
+            is_year_range = _is_year_range(start_part, end_part, lower_date, upper_date)
+            is_month_range = _is_month_range(start_part, end_part, lower_date, upper_date)
 
 
             if is_year_range:
@@ -272,6 +255,52 @@ def create_flexible_date_from_formal_date(formal_date: str) -> FlexibleDate:
         
     except Exception as e:
         raise ValueError(f'Unable to parse EDTF string "{formal_date}": {str(e)}')
+
+def _is_year_range(start_part:str, end_part:str, lower_date:datetime, upper_date:datetime) -> bool:
+    """Checks if the date is a year range.
+
+    Args:
+        start_part (str): the start part of the date
+        end_part (str): the end part of the date
+        lower_date (datetime): the lower date
+        upper_date (datetime): the upper date
+
+    Returns:
+        bool: True if the date is a year range, False otherwise
+    """
+    return (
+        (len(start_part) == 4 and 
+        len(end_part) == 4 and 
+        start_part.isdigit() and 
+        end_part.isdigit()) 
+        or 
+        (lower_date.tm_mon == 1 and 
+        upper_date.tm_mon == 12 and 
+        lower_date.tm_year == upper_date.tm_year)
+    )
+
+def _is_month_range(start_part:str, end_part:str, lower_date:datetime, upper_date:datetime) -> bool:
+    """Checks if the date is a month range.
+
+    Args:
+        start_part (str): the start part of the date
+        end_part (str): the end part of the date
+        lower_date (datetime): the lower date
+        upper_date (datetime): the upper date
+
+    Returns:
+        bool: True if the date is a month range, False otherwise
+    """
+    get_upper_month_range = lambda month: 28 if month == 2 else 30 if month in [4, 6, 9, 11] else 31
+
+    return (
+        len(start_part) == 6 and 
+        len(end_part) == 6 and
+        lower_date.tm_year == upper_date.tm_year and
+        lower_date.tm_mon == upper_date.tm_mon and
+        lower_date.tm_mday == 1 and
+        upper_date.tm_mday >= get_upper_month_range(upper_date.tm_mon)
+    )
 
 def create_flexible_date(likely_date:str|None) -> FlexibleDate:
     """Parses a string (or None) to create a FlexibleDate object. Attempts 
