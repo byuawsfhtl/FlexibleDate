@@ -208,7 +208,7 @@ class TestCreateFlexibleDateFromFormalDate:
             },
             {
                 "input": "2020-01-01/2020-12-31",
-                "expected": {"likelyYear": 2020, "likelyMonth": 1, "likelyDay": 1},
+                "expected": {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
                 "description": "date range within year"
             },
             {
@@ -223,7 +223,7 @@ class TestCreateFlexibleDateFromFormalDate:
             },
             {
                 "input": "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z",
-                "expected": {"likelyYear": 1910, "likelyMonth": 1, "likelyDay": 1},
+                "expected": {"likelyYear": 1910, "likelyMonth": None, "likelyDay": None},
                 "description": "datetime range"
             }
         ]
