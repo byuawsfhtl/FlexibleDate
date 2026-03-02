@@ -117,8 +117,8 @@ class FlexibleDate(BaseModel):
         else:
             return f'{year_conversion}'
 
-    def __equals__(self, obj:object) -> bool:
-        """ Overrides the __equals__ method to compare two FlexibleDate objects.
+    def __eq__(self, obj:object) -> bool:
+        """Overrides the __eq__ method to compare two FlexibleDate objects.
 
         Args:
             obj (object): the object to compare to
