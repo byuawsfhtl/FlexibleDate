@@ -117,8 +117,8 @@ class FlexibleDate(BaseModel):
         else:
             return f'{year_conversion}'
 
-    def __equals__(self, obj:object) -> bool:
-        """ Overrides the __equals__ method to compare two FlexibleDate objects.
+    def __eq__(self, obj:object) -> bool:
+        """Overrides the __eq__ method to compare two FlexibleDate objects.
 
         Args:
             obj (object): the object to compare to
@@ -236,29 +236,84 @@ def create_flexible_date_from_formal_date(formal_date: str) -> FlexibleDate:
     
     try:
         # Clean the input - remove '+' signs which aren't standard EDTF
-        cleaned_date = formal_date.replace('+', '')
+        cleaned_date = formal_date.replace('A+', '')
+        cleaned_date = cleaned_date.replace('+', '')
         # Remove time and timezone info (e.g., T00:00:00Z) to keep only the date
         cleaned_date = re.sub(r'T\d{2}:\d{2}:\d{2}Z', '', cleaned_date)
         
         edtf_obj = parse_edtf(cleaned_date)
         
         lower_date = edtf_obj.lower_strict()
-        
+        upper_date = edtf_obj.upper_strict() if '/' in cleaned_date else None
+
         likely_year = lower_date.tm_year if lower_date.tm_year != 9999 else None
         likely_month = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_date.split('-')) > 1 else None
         likely_day = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_date.split('-')) > 2 else None
-        
-        if '/' in cleaned_date and len(parts := cleaned_date.split('/')) == 2:
-            start_part = parts[0]
-            end_part = parts[1]
-            if len(start_part) == 4 and len(end_part) == 4 and start_part.isdigit() and end_part.isdigit():
+
+        if upper_date is not None:
+            [start_part, end_part] = cleaned_date.split('/')
+
+            is_year_range = _is_year_range(start_part, end_part, lower_date, upper_date)
+            is_month_range = _is_month_range(start_part, end_part, lower_date, upper_date)
+
+
+            if is_year_range:
                 likely_month = None
+                likely_day = None
+            
+            elif is_month_range:
                 likely_day = None
         
         return FlexibleDate(likely_year=likely_year, likely_month=likely_month, likely_day=likely_day)
         
     except Exception as e:
         raise ValueError(f'Unable to parse EDTF string "{formal_date}": {str(e)}')
+
+def _is_year_range(start_part:str, end_part:str, lower_date:datetime, upper_date:datetime) -> bool:
+    """Checks if the date is a year range.
+
+    Args:
+        start_part (str): the start part of the date
+        end_part (str): the end part of the date
+        lower_date (datetime): the lower date
+        upper_date (datetime): the upper date
+
+    Returns:
+        bool: True if the date is a year range, False otherwise
+    """
+    return (
+        (len(start_part) == 4 and 
+        len(end_part) == 4 and 
+        start_part.isdigit() and 
+        end_part.isdigit()) 
+        or 
+        (lower_date.tm_mon == 1 and 
+        upper_date.tm_mon == 12 and 
+        lower_date.tm_year == upper_date.tm_year)
+    )
+
+def _is_month_range(start_part:str, end_part:str, lower_date:datetime, upper_date:datetime) -> bool:
+    """Checks if the date is a month range.
+
+    Args:
+        start_part (str): the start part of the date
+        end_part (str): the end part of the date
+        lower_date (datetime): the lower date
+        upper_date (datetime): the upper date
+
+    Returns:
+        bool: True if the date is a month range, False otherwise
+    """
+    get_upper_month_range = lambda month: 28 if month == 2 else 30 if month in [4, 6, 9, 11] else 31
+
+    return (
+        len(start_part) == 6 and 
+        len(end_part) == 6 and
+        lower_date.tm_year == upper_date.tm_year and
+        lower_date.tm_mon == upper_date.tm_mon and
+        lower_date.tm_mday == 1 and
+        upper_date.tm_mday >= get_upper_month_range(upper_date.tm_mon)
+    )
 
 def create_flexible_date(likely_date:str|None) -> FlexibleDate:
     """Parses a string (or None) to create a FlexibleDate object. Attempts 
