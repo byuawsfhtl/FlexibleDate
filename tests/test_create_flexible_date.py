@@ -265,6 +265,16 @@ class TestCreateFlexibleDateFromFormalDate:
                 "input": "+1945",
                 "expected": {"likelyYear": 1945, "likelyMonth": None, "likelyDay": None},
                 "description": "year only with plus prefix"
+            },
+            {
+                "input": "A+1850",
+                "expected": {"likelyYear": 1850, "likelyMonth": None, "likelyDay": None},
+                "description": "year only with plus prefix and text"
+            },
+            {
+                "input": '+1953-01/+1953-12',
+                "expected": {"likelyYear": 1953, "likelyMonth": None, "likelyDay": None},
+                "description": "full year as month range"
             }
         ]
         
