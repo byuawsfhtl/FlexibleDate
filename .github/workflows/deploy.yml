@@ -128,4 +128,4 @@ jobs:
         working-directory: ./FlexibleDateTS
         run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Token will expire every 90 days. Will have to update this token periodically.

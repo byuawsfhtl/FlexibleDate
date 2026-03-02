@@ -173,6 +173,10 @@ class FlexibleDateTestRunner:
                 elif function_name == "test_repr":
                     fd = self._deserialize_flexible_date(input_data)
                     result = repr(fd)
+                elif function_name == "test_equals":
+                    fd1 = self._deserialize_flexible_date(input_data[0])
+                    fd2 = self._deserialize_flexible_date(input_data[1])
+                    result = fd1.__equals__(fd2)
                 elif function_name == "test_validator":
                     try:
                         fd = self._deserialize_flexible_date(input_data)

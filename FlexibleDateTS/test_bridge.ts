@@ -105,6 +105,15 @@ function processRequest(request: TestRequest): TestResponse {
                     result: fdForRepr.inspect()
                 };
 
+            case 'test_equals':
+                const [fdDataEquals1, fdDataEquals2] = request.args;
+                const fdForEquals1 = deserializeFlexibleDate(fdDataEquals1);
+                const fdForEquals2 = deserializeFlexibleDate(fdDataEquals2);
+                return {
+                    success: true,
+                    result: fdForEquals1.equals(fdForEquals2)
+                };
+
             case 'testValidator':
                 try {
                     const [fdDataValidator] = request.args;
