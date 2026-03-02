@@ -116,6 +116,19 @@ class FlexibleDate(BaseModel):
             return f'{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}'
         else:
             return f'{year_conversion}'
+
+    def __equals__(self, obj:object) -> bool:
+        """ Overrides the __equals__ method to compare two FlexibleDate objects.
+
+        Args:
+            obj (object): the object to compare to
+
+        Returns:
+            bool: True if the two objects are equal, False otherwise
+        """
+        if not isinstance(obj, FlexibleDate):
+            return False
+        return self.likely_year == obj.likely_year and self.likely_month == obj.likely_month and self.likely_day == obj.likely_day
     
 def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float | int:
     """Compares two flexible dates and gives the comparison a score.

@@ -251,3 +251,62 @@ class TestReprMethod:
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
         test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
+class TestEqualsMethod:
+    """Test the __equals__ method of FlexibleDate."""
+    
+    equals_test_cases = [
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15}
+            ],
+            "expected": True,
+            "description": "two identical dates return True"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2021, "likelyMonth": 6, "likelyDay": 20}
+            ],
+            "expected": False,
+            "description": "two different dates return False"
+        },
+        {
+            "input": [
+                {"likelyYear": None, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": None, "likelyMonth": None, "likelyDay": None}
+            ],
+            "expected": True,
+            "description": "two null dates return True"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": None}
+            ],
+            "expected": False,
+            "description": "dates with different None values return False"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 20}
+            ],
+            "expected": False,
+            "description": "dates with partial matches return False"
+        }
+    ]
+    
+    @pytest.mark.parametrize("test_case", equals_test_cases, ids=lambda x: x['description'])
+    def test_equals_method(self, test_case):
+        test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
+        
+        py_result, ts_result = test_runner.run_dual_test(
+            "test_equals",
+            "test_equals",
+            test_data
+        )
+        
+        assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
+        assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
+        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
