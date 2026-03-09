@@ -187,7 +187,8 @@ export default class FlexibleDate {
         
         try {
             // Clean the input - remove '+' signs which aren't standard EDTF
-            const cleanedDate = formalDate.replace(/\+/g, '')
+            let cleanedDate = formalDate.replace(/A\+/, '')
+            cleanedDate = cleanedDate.replace(/\+/g, '')
             
             let edtfObj = edtf.parse(cleanedDate) as {
                 type: string;
@@ -195,6 +196,7 @@ export default class FlexibleDate {
                 values: number[] | Object[];
             }
             let lowerDate;
+            let upperDate;
             
             // Extract year, month, day from the edtf object
             // The edtf package returns { type: 'Date', level: 0, values: [year, month-1, day] }
@@ -205,6 +207,11 @@ export default class FlexibleDate {
 
             if (edtfObj && edtfObj.type === 'Interval' && Array.isArray(edtfObj.values) && edtfObj.values[0]) {
                 lowerDate = edtfObj.values[0] as {
+                    type: string;
+                    level: number;
+                    values: number[];
+                };
+                upperDate = edtfObj.values[1] as {
                     type: string;
                     level: number;
                     values: number[];
@@ -226,16 +233,35 @@ export default class FlexibleDate {
                 likelyDay = (day !== undefined && (day !== 1 || cleanedDate.split('-').length > 2)) ? day : null
             }
             
-            // Handle date ranges - if it's a year range like "1910/1920", only keep year
-            if (cleanedDate.includes('/')) {
-                const parts = cleanedDate.split('/')
-                if (parts.length === 2) {
-                    const startPart = parts[0]
-                    const endPart = parts[1]
-                    if (startPart.length === 4 && endPart.length === 4 && !isNaN(parseInt(startPart)) && !isNaN(parseInt(endPart))) {
-                        likelyMonth = null
-                        likelyDay = null
-                    }
+            // Handle date ranges - check for year/month span collapsing
+            if (upperDate) {
+                const [startPart, endPart] = cleanedDate.split('/')
+                const lower = (edtfObj.values[0] as { values: number[] })?.values ?? []
+                const upper = (edtfObj.values[1] as { values: number[] })?.values ?? []
+                const [lowerYear, lowerMonth, lowerDay] = lower
+                const [upperYear, upperMonth, upperDay] = upper
+
+                // Note: months are 0-indexed here (0=Jan, 11=Dec), unlike Python's 1-indexed tm_mon
+                const getUpperMonthRange = (month: number): number =>
+                    month === 1 ? 28 : [3, 5, 8, 10].includes(month) ? 30 : 31
+
+                const isYearRange = (
+                    (startPart.length === 4 && endPart.length === 4 && !isNaN(parseInt(startPart)) && !isNaN(parseInt(endPart))) ||
+                    (lowerMonth === 0 && upperMonth === 11 && lowerYear === upperYear)
+                )
+                const isMonthRange = (
+                    startPart.length === 6 && endPart.length === 6 &&
+                    lowerYear === upperYear &&
+                    lowerMonth === upperMonth &&
+                    lowerDay === 1 &&
+                    upperDay !== undefined && upperDay >= getUpperMonthRange(upperMonth)
+                )
+
+                if (isYearRange) {
+                    likelyMonth = null
+                    likelyDay = null
+                } else if (isMonthRange) {
+                    likelyDay = null
                 }
             }
 
