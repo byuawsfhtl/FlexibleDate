@@ -1,17 +1,7 @@
 #!/usr/bin/env node
 
 import FlexibleDate from './FlexibleDateTS';
-
-interface TestRequest {
-    method: string;
-    args: any[];
-}
-
-interface TestResponse {
-    success: boolean;
-    result?: any;
-    error?: string;
-}
+import { PyScriptTestBridge } from 'pyscripttestutils';
 
 function serializeFlexibleDate(fd: FlexibleDate): any {
     return {
@@ -25,143 +15,56 @@ function deserializeFlexibleDate(data: any): FlexibleDate {
     return new FlexibleDate(data.likelyDay, data.likelyMonth, data.likelyYear);
 }
 
-function processRequest(request: TestRequest): TestResponse {
-    try {
-        switch (request.method) {
-            case 'createFlexibleDate':
-                const [dateString] = request.args;
-                const fd = new FlexibleDate(dateString);
-                return {
-                    success: true,
-                    result: serializeFlexibleDate(fd)
-                };
+const bridge = new PyScriptTestBridge(serializeFlexibleDate, deserializeFlexibleDate);
 
-            case 'createFlexibleDateFromFormalDate':
-                const [formalDateString] = request.args;
-                const fdFromFormal = new FlexibleDate(null, null, null);
-                const result = fdFromFormal.createFlexibleDateFromFormalDate(formalDateString);
-                return {
-                    success: true,
-                    result: serializeFlexibleDate(result)
-                };
+bridge.addMethod('createFlexibleDate', (args: any[]) => {
+    const [dateString] = args;
+    return new FlexibleDate(dateString);
+});
 
-            case 'compareDates':
-                const [date1Data, date2Data] = request.args;
-                const fd1 = deserializeFlexibleDate(date1Data);
-                const fd2 = deserializeFlexibleDate(date2Data);
-                const score = fd1.compareDates(fd2);
-                return {
-                    success: true,
-                    result: score
-                };
+bridge.addMethod('createFlexibleDateFromFormalDate', (args: any[]) => {
+    const [formalDateString] = args;
+    const fdFromFormal = new FlexibleDate(null, null, null);
+    return fdFromFormal.createFlexibleDateFromFormalDate(formalDateString);
+});
 
-            case 'combineFlexibleDates':
-                const [datesData] = request.args;
-                const dates = datesData.map((d: any) => deserializeFlexibleDate(d));
-                const fd_temp = new FlexibleDate(null, null, null);
-                const combined = fd_temp.combineFlexibleDates(dates);
-                return {
-                    success: true,
-                    result: serializeFlexibleDate(combined)
-                };
+bridge.addMethod('compareDates', (args: any[]) => {
+    const [date1, date2] = args;
+    return date1.compareDates(date2);
+});
 
-            case 'toString':
-                const [fdData] = request.args;
-                const fdForString = deserializeFlexibleDate(fdData);
-                return {
-                    success: true,
-                    result: fdForString.toString()
-                };
+bridge.addMethod('combineFlexibleDates', (args: any[]) => {
+    const [dates] = args;
+    const fd_temp = new FlexibleDate(null, null, null);
+    return fd_temp.combineFlexibleDates(dates);
+});
 
-            case 'valueOf':
-                const [fdDataValue] = request.args;
-                const fdForValue = deserializeFlexibleDate(fdDataValue);
-                return {
-                    success: true,
-                    result: fdForValue.valueOf()
-                };
+bridge.addMethod('toString', (args: any[]) => {
+    const [fd] = args;
+    return fd.toString();
+});
 
-            case 'testBool':
-                const [fdDataBool] = request.args;
-                const fdForBool = deserializeFlexibleDate(fdDataBool);
-                return {
-                    success: true,
-                    result: fdForBool.valueOf()
-                };
+bridge.addMethod('inspect', (args: any[]) => {
+    const [fd] = args;
+    return fd.inspect();
+});
 
-            case 'testStr':
-                const [fdDataStr] = request.args;
-                const fdForStr = deserializeFlexibleDate(fdDataStr);
-                return {
-                    success: true,
-                    result: fdForStr.toString()
-                };
+bridge.addMethod('valueOf', (args: any[]) => {
+    const [fd] = args;
+    return fd.valueOf();
+});
 
-            case 'testRepr':
-                const [fdDataRepr] = request.args;
-                const fdForRepr = deserializeFlexibleDate(fdDataRepr);
-                return {
-                    success: true,
-                    result: fdForRepr.inspect()
-                };
+bridge.addMethod('equals', (args: any[]) => {
+    const [date1, date2] = args;
+    return date1.equals(date2);
+});
 
-            case 'test_equals':
-                const [fdDataEquals1, fdDataEquals2] = request.args;
-                const fdForEquals1 = deserializeFlexibleDate(fdDataEquals1);
-                const fdForEquals2 = deserializeFlexibleDate(fdDataEquals2);
-                return {
-                    success: true,
-                    result: fdForEquals1.equals(fdForEquals2)
-                };
-
-            case 'testValidator':
-                try {
-                    const [fdDataValidator] = request.args;
-                    const fdForValidator = deserializeFlexibleDate(fdDataValidator);
-                    return {
-                        success: true,
-                        result: serializeFlexibleDate(fdForValidator)
-                    };
-                } catch (error) {
-                    return {
-                        success: true,
-                        result: "ValueError"
-                    };
-                }
-
-            default:
-                return {
-                    success: false,
-                    error: `Unknown method: ${request.method}`
-                };
-        }
-    } catch (error) {
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
-    }
-}
+bridge.addMethod('testValidator', (args: any[]) => {
+    const [fd] = args;
+    return deserializeFlexibleDate(fd);
+});
 
 // Main execution
 if (require.main === module) {
-    const args = process.argv.slice(2);
-    if (args.length === 0) {
-        console.error('Usage: node test_bridge.js <json_request>');
-        process.exit(1);
-    }
-
-    try {
-        const request: TestRequest = JSON.parse(args[0]);
-        const response = processRequest(request);
-        console.log(JSON.stringify(response));
-    } catch (error) {
-        const errorResponse: TestResponse = {
-            success: false,
-            error: error instanceof Error ? error.message : String(error)
-        };
-        console.log(JSON.stringify(errorResponse));
-    }
+    bridge.runCli();
 }
-
-export { processRequest, TestRequest, TestResponse };
