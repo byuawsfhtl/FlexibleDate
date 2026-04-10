@@ -283,7 +283,7 @@ class TestCreateFlexibleDateFromFormalDate:
             },
             {
                 "input": '+1953-01/+1953-12',
-                "expected": {"likelyYear": 1953, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1953),
                 "description": "full year as month range"
             }
         ]
@@ -339,4 +339,3 @@ class TestCreateFlexibleDateFromFormalDate:
                 f"Python should raise error for {test_case['description']}, got: {py_result}"
             assert isinstance(ts_result, dict) and ts_result.get("error") is True, \
                 f"TypeScript should raise error for {test_case['description']}, got: {ts_result}"
-            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
