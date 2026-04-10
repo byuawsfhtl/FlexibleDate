@@ -1,9 +1,18 @@
+from pathlib import Path
+from FlexibleDate.FlexibleDate import (
+    FlexibleDate,
+    combine_flexible_dates,
+)
 import pytest
-from test_utils import FlexibleDateTestRunner
+from pyscripttestutils import PyScriptTestRunner
 
-# Initialize the test runner (will handle environment setup automatically)
-test_runner = FlexibleDateTestRunner()
+runner = PyScriptTestRunner(
+    Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
+    serializer = lambda d: {"likelyYear": d.likely_year, "likelyMonth": d.likely_month, "likelyDay": d.likely_day},
+    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
+)
 
+runner.add_method(combine_flexible_dates, "combineFlexibleDates")
 
 class TestBasicCombining:
     """Test fundamental combining operations."""
@@ -54,7 +63,7 @@ class TestBasicCombining:
     def test_basic_combining(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
+        py_result, ts_result = runner.run(
             "combine_flexible_dates",
             "combineFlexibleDates",
             test_data
@@ -62,7 +71,7 @@ class TestBasicCombining:
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestConsensus:
@@ -103,7 +112,7 @@ class TestConsensus:
     def test_perfect_consensus(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
+        py_result, ts_result = runner.run(
             "combine_flexible_dates",
             "combineFlexibleDates",
             test_data
@@ -111,7 +120,7 @@ class TestConsensus:
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
     majority_cases = [
         {
@@ -159,7 +168,7 @@ class TestConsensus:
     def test_majority_agreement(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
+        py_result, ts_result = runner.run(
             "combine_flexible_dates",
             "combineFlexibleDates",
             test_data
@@ -167,7 +176,7 @@ class TestConsensus:
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestProximityScoring:
@@ -231,7 +240,7 @@ class TestProximityScoring:
     def test_proximity_scoring(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
+        py_result, ts_result = runner.run(
             "combine_flexible_dates",
             "combineFlexibleDates",
             test_data
@@ -239,7 +248,7 @@ class TestProximityScoring:
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestPartialDates:
@@ -302,7 +311,7 @@ class TestPartialDates:
     def test_partial_dates(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
+        py_result, ts_result = runner.run(
             "combine_flexible_dates",
             "combineFlexibleDates",
             test_data
@@ -310,7 +319,7 @@ class TestPartialDates:
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestNullValues:
@@ -373,7 +382,7 @@ class TestNullValues:
     def test_null_values(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
+        py_result, ts_result = runner.run(
             "combine_flexible_dates",
             "combineFlexibleDates",
             test_data
@@ -381,7 +390,7 @@ class TestNullValues:
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestTieBreaking:
@@ -430,7 +439,7 @@ class TestTieBreaking:
     def test_tie_breaking(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
+        py_result, ts_result = runner.run(
             "combine_flexible_dates",
             "combineFlexibleDates",
             test_data
@@ -438,7 +447,7 @@ class TestTieBreaking:
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestMixedPrecision:
@@ -497,7 +506,7 @@ class TestMixedPrecision:
     def test_mixed_precision(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
+        py_result, ts_result = runner.run(
             "combine_flexible_dates",
             "combineFlexibleDates",
             test_data
@@ -505,7 +514,7 @@ class TestMixedPrecision:
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestEdgeCases:
@@ -598,7 +607,7 @@ class TestEdgeCases:
     def test_edge_cases(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
+        py_result, ts_result = runner.run(
             "combine_flexible_dates",
             "combineFlexibleDates",
             test_data
@@ -606,5 +615,5 @@ class TestEdgeCases:
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
