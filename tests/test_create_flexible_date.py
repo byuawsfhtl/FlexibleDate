@@ -1,11 +1,7 @@
 import pytest
 from pathlib import Path
 from pyscripttestutils import PyScriptTestRunner
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'FlexibleDate'))
-from FlexibleDate import FlexibleDate, create_flexible_date, create_flexible_date_from_formal_date
+from FlexibleDate.FlexibleDate import FlexibleDate, create_flexible_date, create_flexible_date_from_formal_date
 
 runner = PyScriptTestRunner(
     Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
