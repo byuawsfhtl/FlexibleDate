@@ -84,32 +84,32 @@ class TestCreateFlexibleDate:
         partial_date_cases = [
             {
                 "input": "May 2023",
-                "expected": {"likelyYear": 2023, "likelyMonth": 5, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=5, likely_year=2023),
                 "description": "month and year only"
             },
             {
                 "input": "1995",
-                "expected": {"likelyYear": 1995, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1995),
                 "description": "year only"
             },
             {
                 "input": "December",
-                "expected": {"likelyYear": None, "likelyMonth": 12, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=12, likely_year=None),
                 "description": "month only"
             },
             {
                 "input": "December 12",
-                "expected": {"likelyYear": None, "likelyMonth": 12, "likelyDay": 12},
+                "expected": FlexibleDate(likely_day=12, likely_month=12, likely_year=None),
                 "description": "month and day only"
             },
             {
                 "input": "The event happened sometime in July 2021",
-                "expected": {"likelyYear": 2021, "likelyMonth": 7, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=7, likely_year=2021),
                 "description": "month and year in sentence"
             },
             {
                 "input": "circa 1850s",
-                "expected": {"likelyYear": 1850, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1850),
                 "description": "approximate year with text"
             }
         ]
@@ -134,17 +134,17 @@ class TestCreateFlexibleDate:
         null_date_cases = [
             {
                 "input": None,
-                "expected": {"likelyYear": None, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=None),
                 "description": "null input"
             },
             {
                 "input": "",
-                "expected": {"likelyYear": None, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=None),
                 "description": "empty string"
             },
             {
                 "input": "   ",
-                "expected": {"likelyYear": None, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=None),
                 "description": "whitespace only"
             }
         ]
@@ -169,17 +169,17 @@ class TestCreateFlexibleDate:
         invalid_date_cases = [
             {
                 "input": "February 30, 2020",
-                "expected": {"likelyYear": 2020, "likelyMonth": 2, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=2, likely_year=2020),
                 "description": "February 31st (invalid) falls back to year-month"
             },
             {
                 "input": "April 31, 2020",
-                "expected": {"likelyYear": 2020, "likelyMonth": 4, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=4, likely_year=2020),
                 "description": "April 31st (invalid) falls back to year-month"
             },
             {
                 "input": "June 31, 2020",
-                "expected": {"likelyYear": 2020, "likelyMonth": 6, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=6, likely_year=2020),
                 "description": "June 31st (invalid) falls back to year-month"
             }
         ]
@@ -208,32 +208,32 @@ class TestCreateFlexibleDateFromFormalDate:
         full_edtf_cases = [
             {
                 "input": "2020-01-15",
-                "expected": {"likelyYear": 2020, "likelyMonth": 1, "likelyDay": 15},
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
                 "description": "simple EDTF date"
             },
             {
                 "input": "+2020-01-15",
-                "expected": {"likelyYear": 2020, "likelyMonth": 1, "likelyDay": 15},
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
                 "description": "EDTF with plus prefix"
             },
             {
                 "input": "2020-01-01/2020-12-31",
-                "expected": {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=2020),
                 "description": "date range within year"
             },
             {
                 "input": "+1526-01-01/+2020-12-31",
-                "expected": {"likelyYear": 1526, "likelyMonth": 1, "likelyDay": 1},
+                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=1526),
                 "description": "long date range with plus"
             },
             {
                 "input": "2020-01-15T10:30:00Z",
-                "expected": {"likelyYear": 2020, "likelyMonth": 1, "likelyDay": 15},
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
                 "description": "EDTF with time and timezone"
             },
             {
                 "input": "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z",
-                "expected": {"likelyYear": 1910, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910),
                 "description": "datetime range"
             }
         ]
@@ -258,27 +258,27 @@ class TestCreateFlexibleDateFromFormalDate:
         partial_edtf_cases = [
             {
                 "input": "1945",
-                "expected": {"likelyYear": 1945, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945),
                 "description": "year only EDTF"
             },
             {
                 "input": "1945-05",
-                "expected": {"likelyYear": 1945, "likelyMonth": 5, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=5, likely_year=1945),
                 "description": "year-month EDTF"
             },
             {
                 "input": "1910/1920",
-                "expected": {"likelyYear": 1910, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910),
                 "description": "year range"
             },
             {
                 "input": "+1945",
-                "expected": {"likelyYear": 1945, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945),
                 "description": "year only with plus prefix"
             },
             {
                 "input": "A+1850",
-                "expected": {"likelyYear": 1850, "likelyMonth": None, "likelyDay": None},
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1850),
                 "description": "year only with plus prefix and text"
             },
             {
