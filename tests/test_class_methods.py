@@ -1,8 +1,17 @@
+from pathlib import Path
+from FlexibleDate.FlexibleDate import FlexibleDate
 import pytest
-from test_utils import FlexibleDateTestRunner
+from pyscripttestutils import PyScriptTestRunner
 
-# Initialize the test runner (will handle environment setup automatically)
-test_runner = FlexibleDateTestRunner()
+runner = PyScriptTestRunner(
+    Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
+    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
+)
+
+runner.add_method(FlexibleDate.__bool__, "FlexibleDate.valueOf", executor=lambda d: bool(d))
+runner.add_method(FlexibleDate.__str__, "FlexibleDate.toString", executor=lambda d: str(d))
+runner.add_method(FlexibleDate.__repr__, "FlexibleDate.inspect", executor=lambda d: repr(d))
+runner.add_method(FlexibleDate.__eq__, "FlexibleDate.equals", executor=lambda d: d[0] == d[1])
 
 
 class TestBoolMethod:
@@ -54,15 +63,15 @@ class TestBoolMethod:
     def test_bool_method(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
-            "test_bool",
-            "testBool",
+        py_result, ts_result = runner.run(
+            "FlexibleDate.__bool__",
+            "FlexibleDate.valueOf",
             test_data
         )
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestStrMethod:
@@ -165,15 +174,15 @@ class TestStrMethod:
     def test_str_method(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
-            "test_str",
-            "testStr",
+        py_result, ts_result = runner.run(
+            "FlexibleDate.__str__",
+            "FlexibleDate.toString",
             test_data
         )
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 
 class TestReprMethod:
@@ -241,15 +250,15 @@ class TestReprMethod:
     def test_repr_method(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
-            "test_repr",
-            "testRepr",
+        py_result, ts_result = runner.run(
+            "FlexibleDate.__repr__",
+            "FlexibleDate.inspect",
             test_data
         )
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 class TestEqualsMethod:
     """Test the __equals__ method of FlexibleDate."""
@@ -301,12 +310,12 @@ class TestEqualsMethod:
     def test_equals_method(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
-        py_result, ts_result = test_runner.run_dual_test(
-            "test_equals",
-            "test_equals",
+        py_result, ts_result = runner.run(
+            "FlexibleDate.__eq__",
+            "FlexibleDate.equals",
             test_data
         )
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])

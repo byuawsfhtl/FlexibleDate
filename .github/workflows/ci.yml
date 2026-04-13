@@ -49,6 +49,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r FlexibleDate/requirements.txt
+          pip install -r FlexibleDate/requirements-dev.txt
 
       - name: Install npm dependencies
         run: |
