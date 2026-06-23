@@ -449,7 +449,7 @@ export default class FlexibleDate {
                         }
                     } catch (error) {
                         // Ignore invalid dates
-                        console.log(error);
+                        //console.log(error);
                     }
                 }
             }
