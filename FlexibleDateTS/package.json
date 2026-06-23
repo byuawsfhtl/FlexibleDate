@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "test": "nyc --reporter=json --reporter=text jest",
-    "test-bridge": "tsc && node dist/test_bridge.js",
+    "test-bridge": "npm run build && tsc -p tsconfig.test-bridge.json && node dist/test_bridge.js",
     "coverage": "nyc report --reporter=json",
     "prepublishOnly": "npm run build"
   },

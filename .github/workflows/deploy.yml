@@ -126,6 +126,6 @@ jobs:
         run: ls -l FlexibleDateTS/dist/
       - name: Publish to npm
         working-directory: ./FlexibleDateTS
-        run: npm publish
+        run: npm publish --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Token will expire every 90 days. Will have to update this token periodically.
