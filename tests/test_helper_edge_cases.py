@@ -1,8 +1,17 @@
+from pathlib import Path
+from FlexibleDate.FlexibleDate import (
+    FlexibleDate,
+    create_flexible_date,
+)
 import pytest
-from test_utils import FlexibleDateTestRunner
+from pyscripttestutils import PyScriptTestRunner
 
-# Initialize the test runner (will handle environment setup automatically)
-test_runner = FlexibleDateTestRunner()
+runner = PyScriptTestRunner(
+    Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
+    serializer = lambda d: {"likelyYear": d.likely_year, "likelyMonth": d.likely_month, "likelyDay": d.likely_day},
+    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
+)
+runner.add_method(create_flexible_date, "createFlexibleDate")
 
 
 class TestEdgeCases:
@@ -63,7 +72,7 @@ class TestEdgeCases:
         def test_ancient_dates(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
-            py_result, ts_result = test_runner.run_dual_test(
+            py_result, ts_result = runner.run(
                 "create_flexible_date",
                 "createFlexibleDate",
                 test_data
@@ -71,7 +80,7 @@ class TestEdgeCases:
             
             assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
             assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
     
     class TestTextCleaning:
         """Test complex text cleaning scenarios."""
@@ -143,7 +152,7 @@ class TestEdgeCases:
         def test_text_cleaning(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
-            py_result, ts_result = test_runner.run_dual_test(
+            py_result, ts_result = runner.run(
                 "create_flexible_date",
                 "createFlexibleDate",
                 test_data
@@ -151,7 +160,7 @@ class TestEdgeCases:
             
             assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
             assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
     
     class TestDecadeAndRanges:
         """Test parsing of decades and special formats."""
@@ -183,7 +192,7 @@ class TestEdgeCases:
         def test_decades(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
-            py_result, ts_result = test_runner.run_dual_test(
+            py_result, ts_result = runner.run(
                 "create_flexible_date",
                 "createFlexibleDate",
                 test_data
@@ -191,7 +200,7 @@ class TestEdgeCases:
             
             assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
             assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
     
     class TestAMPMHandling:
         """Test handling of AM/PM markers in dates."""
@@ -218,7 +227,7 @@ class TestEdgeCases:
         def test_ampm_handling(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
-            py_result, ts_result = test_runner.run_dual_test(
+            py_result, ts_result = runner.run(
                 "create_flexible_date",
                 "createFlexibleDate",
                 test_data
@@ -226,7 +235,7 @@ class TestEdgeCases:
             
             assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
             assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
     
     class TestSpecialCharacters:
         """Test handling of special characters and quotes."""
@@ -253,7 +262,7 @@ class TestEdgeCases:
         def test_special_characters(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
-            py_result, ts_result = test_runner.run_dual_test(
+            py_result, ts_result = runner.run(
                 "create_flexible_date",
                 "createFlexibleDate",
                 test_data
@@ -261,7 +270,7 @@ class TestEdgeCases:
             
             assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
             assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
     
     class TestParserEdgeCases:
         """Test edge cases in _parse_with_date_util that trigger fallback to gleaning."""
@@ -283,7 +292,7 @@ class TestEdgeCases:
         def test_parser_edge_cases(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
-            py_result, ts_result = test_runner.run_dual_test(
+            py_result, ts_result = runner.run(
                 "create_flexible_date",
                 "createFlexibleDate",
                 test_data
@@ -291,7 +300,7 @@ class TestEdgeCases:
             
             assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
             assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
     
     class TestComplexDateGleaning:
         """Test complex date gleaning scenarios with multiple possibilities."""
@@ -308,7 +317,7 @@ class TestEdgeCases:
         def test_complex_gleaning(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
-            py_result, ts_result = test_runner.run_dual_test(
+            py_result, ts_result = runner.run(
                 "create_flexible_date",
                 "createFlexibleDate",
                 test_data
@@ -316,5 +325,5 @@ class TestEdgeCases:
             
             assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
             assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-            test_runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
