@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["test_bridge.ts"]
+  "include": ["test_bridge.ts", "edtf.d.ts"]
 }
