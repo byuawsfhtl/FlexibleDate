@@ -1,15 +1,15 @@
 import pytest
 from pathlib import Path
 from pyscripttestutils import PyScriptTestRunner
-from FlexibleDate.FlexibleDate import FlexibleDate, create_flexible_date, create_flexible_date_from_formal_date
+from FlexibleDate.FlexibleDate import FlexibleDate
 
 runner = PyScriptTestRunner(
     Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
     deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
 )
 
-runner.add_method(create_flexible_date, "createFlexibleDate")
-runner.add_method(create_flexible_date_from_formal_date, "createFlexibleDateFromFormalDate")
+runner.add_method(FlexibleDate.create_flexible_date, "createFlexibleDate")
+runner.add_method(FlexibleDate.create_flexible_date_from_formal_date, "createFlexibleDateFromFormalDate")
 
 class TestCreateFlexibleDate:
     """Test FlexibleDate creation from string inputs in both Python and TypeScript."""
@@ -65,7 +65,7 @@ class TestCreateFlexibleDate:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -115,7 +115,7 @@ class TestCreateFlexibleDate:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -150,7 +150,7 @@ class TestCreateFlexibleDate:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -185,7 +185,7 @@ class TestCreateFlexibleDate:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -239,7 +239,7 @@ class TestCreateFlexibleDateFromFormalDate:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date_from_formal_date",
+                "FlexibleDate.create_flexible_date_from_formal_date",
                 "createFlexibleDateFromFormalDate",
                 test_data
             )
@@ -289,7 +289,7 @@ class TestCreateFlexibleDateFromFormalDate:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date_from_formal_date",
+                "FlexibleDate.create_flexible_date_from_formal_date",
                 "createFlexibleDateFromFormalDate",
                 test_data
             )
@@ -325,7 +325,7 @@ class TestCreateFlexibleDateFromFormalDate:
                 "mocks": {}
             }
             py_result, ts_result = runner.run(
-                "create_flexible_date_from_formal_date",
+                "FlexibleDate.create_flexible_date_from_formal_date",
                 "createFlexibleDateFromFormalDate",
                 test_data
             )

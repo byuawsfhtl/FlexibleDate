@@ -130,71 +130,162 @@ class FlexibleDate(BaseModel):
             return False
         return self.likely_year == obj.likely_year and self.likely_month == obj.likely_month and self.likely_day == obj.likely_day
     
-def compare_two_dates(date1:FlexibleDate, date2:FlexibleDate) -> float | int:
-    """Compares two flexible dates and gives the comparison a score.
+    def compare_dates(self, date_to_compare: 'FlexibleDate') -> float | int:
+        """Compares two flexible dates and gives the comparison a score.
 
-    Args:
-        date1 (FlexibleDate): a FlexibleDate object
-        date2 (FlexibleDate): a FlexibleDate object
+        Args:
+            date_to_compare (FlexibleDate): a FlexibleDate object
 
-    Returns:
-        float | int: the score
-    """    
-    score = 100
+        Returns:
+            float | int: the score
+        """    
+        score = 100
 
-    both_years = date1.likely_year and date2.likely_year
-    both_months = date1.likely_month and date2.likely_month
-    both_days = date1.likely_day and date2.likely_day
+        both_years = self.likely_year and date_to_compare.likely_year
+        both_months = self.likely_month and date_to_compare.likely_month
+        both_days = self.likely_day and date_to_compare.likely_day
 
-    if date1 and date2:
-        shared_non_null_count = 0
-        if both_years:
-            shared_non_null_count += 1
-        if both_months:
-            shared_non_null_count += 1
-        if both_days:
-            shared_non_null_count += 1
+        if self and date_to_compare:
+            shared_non_null_count = 0
+            if both_years:
+                shared_non_null_count += 1
+            if both_months:
+                shared_non_null_count += 1
+            if both_days:
+                shared_non_null_count += 1
+            
+            weight = 1 / shared_non_null_count if shared_non_null_count > 0 else 1
+
+            scores = []
+
+            if both_days:
+                max_diff = 15
+                diff = abs(self.likely_day - date_to_compare.likely_day)
+                scores.append(max(0, 1 - diff / max_diff) * weight)
+            if both_months:
+                max_diff = 6
+                diff = abs(self.likely_month - date_to_compare.likely_month)
+                scores.append(max(0, 1 - diff / max_diff) * weight)
+            if both_years:
+                max_diff = 20
+                diff = abs(self.likely_year - date_to_compare.likely_year)
+                if diff >= max_diff:
+                    return 0
+                scores.append(max(0, 1 - diff / max_diff) * weight)
+            score = sum(scores) * 100
+
+        # Return int if whole number, float otherwise
+        rounded_score = round(score, 5)
+        return int(rounded_score) if rounded_score == int(rounded_score) else rounded_score
+
+    @staticmethod
+    def combine_flexible_dates(dates: list['FlexibleDate']) -> 'FlexibleDate':
+        """Combines multiple flexible dates to find the most accurate representation of the event.
+
+        Args:
+            dates (list[FlexibleDate]): a list of FlexibleDates for a specific event
+
+        Returns:
+            FlexibleDate: the combined FlexibleDate that best represents the date of the event.
+        """
+        all_years = [date.likely_year for date in dates]
+        all_months = [date.likely_month for date in dates]
+        all_days = [date.likely_day for date in dates]
+        year = _choose_most_resonable_value(all_years)
+        month = _choose_most_resonable_value(all_months)
+        day = _choose_most_resonable_value(all_days)
+        return FlexibleDate(likely_year=year, likely_month=month, likely_day=day)
+
+    @staticmethod
+    def create_flexible_date_from_formal_date(formal_date: str) -> 'FlexibleDate':
+        """Creates a FlexibleDate object from a formal date string.
         
-        weight = 1 / shared_non_null_count if shared_non_null_count > 0 else 1
+        Args:
+            formal_date (str): an EDTF (Extended Date/Time Format) string.
+        
+        Raises:
+            ValueError: raised if input is not a valid EDTF string
+            
+        Returns:
+            FlexibleDate: the FlexibleDate object parsed from the EDTF string
+        """
+        if not isinstance(formal_date, str):
+            raise ValueError('formal_date must be a string') # should never happen
+        
+        try:
+            # Clean the input - remove '+' signs which aren't standard EDTF
+            cleaned_date = formal_date.replace('A+', '')
+            cleaned_date = cleaned_date.replace('+', '')
+            # Remove time and timezone info (e.g., T00:00:00Z) to keep only the date
+            cleaned_date = re.sub(r'T\d{2}:\d{2}:\d{2}Z', '', cleaned_date)
+            
+            edtf_obj = parse_edtf(cleaned_date)
+            
+            lower_date = edtf_obj.lower_strict()
+            upper_date = edtf_obj.upper_strict() if '/' in cleaned_date else None
 
-        scores = []
+            likely_year = lower_date.tm_year if lower_date.tm_year != 9999 else None
+            likely_month = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_date.split('-')) > 1 else None
+            likely_day = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_date.split('-')) > 2 else None
 
-        if both_days:
-            max_diff = 15
-            diff = abs(date1.likely_day - date2.likely_day)
-            scores.append(max(0, 1 - diff / max_diff) * weight)
-        if both_months:
-            max_diff = 6
-            diff = abs(date1.likely_month - date2.likely_month)
-            scores.append(max(0, 1 - diff / max_diff) * weight)
-        if both_years:
-            max_diff = 20
-            diff = abs(date1.likely_year - date2.likely_year)
-            if diff >= max_diff:
-                return 0
-            scores.append(max(0, 1 - diff / max_diff) * weight)
-        score = sum(scores) * 100
+            if upper_date is not None:
+                [start_part, end_part] = cleaned_date.split('/')
 
-    # Return int if whole number, float otherwise
-    rounded_score = round(score, 5)
-    return int(rounded_score) if rounded_score == int(rounded_score) else rounded_score
+                is_year_range = _is_year_range(start_part, end_part, lower_date, upper_date)
+                is_month_range = _is_month_range(start_part, end_part, lower_date, upper_date)
 
-def combine_flexible_dates(dates: list[FlexibleDate]) -> FlexibleDate:
-    """Combines multiple flexible dates to find the most accurate representation of the event.
 
-    Args:
-        dates (list[FlexibleDate]): a list of FlexibleDates for a specific event
+                if is_year_range:
+                    likely_month = None
+                    likely_day = None
+                
+                elif is_month_range:
+                    likely_day = None
+            
+            return FlexibleDate(likely_year=likely_year, likely_month=likely_month, likely_day=likely_day)
+            
+        except Exception as e:
+            raise ValueError(f'Unable to parse EDTF string "{formal_date}": {str(e)}')
 
-    Returns:
-        FlexibleDate: the combined FlexiblDate that best represents the date of the event.
-    """
-    all_years = [date.likely_year for date in dates]
-    all_months = [date.likely_month for date in dates]
-    all_days = [date.likely_day for date in dates]
-    year = _choose_most_resonable_value(all_years)
-    month = _choose_most_resonable_value(all_months)
-    day = _choose_most_resonable_value(all_days)
-    return FlexibleDate(likely_year=year, likely_month=month, likely_day=day)
+    @staticmethod
+    def create_flexible_date(likely_date:str|None) -> 'FlexibleDate':
+        """Parses a string (or None) to create a FlexibleDate object. Attempts 
+        to parse international format first, then American format, then European.
+
+        Args:
+            likely_date (str | None): the input
+
+        Raises:
+            ValueError: raised if input not str or None
+
+        Returns:
+            FlexibleDate: the FlexibleDate object parsed from the input string
+        """    
+        # validate input
+        if likely_date is None or likely_date.strip() == "":
+            return FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
+        elif not isinstance(likely_date, str):
+            raise ValueError('likely_date must be str or None')
+        
+        # Defaults
+        likely_day = None
+        likely_month = None
+        likely_year = None
+        # Overwrite defaults if data is found
+        parsed_date, num_fields = _get_cleaned_date_and_num_fields(likely_date)
+        if num_fields >= 1:
+            if parsed_date.year != 9999:
+                likely_year = parsed_date.year
+        if num_fields >= 2:
+            likely_month = parsed_date.month
+        if num_fields == 3:
+            likely_day = parsed_date.day
+        # Initializing and return the fd
+        try:
+            fd = FlexibleDate(likely_day=likely_day, likely_month=likely_month, likely_year=likely_year)
+        except:
+            fd = FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
+        return fd
 
 def _choose_most_resonable_value(values: list[Optional[int]]) -> int | None:
     """Chooses the best value. Can compromise for a middle value.
@@ -218,56 +309,6 @@ def _choose_most_resonable_value(values: list[Optional[int]]) -> int | None:
                 confidence += 1.2 * (other_count / total_count) / (1 + abs(value - other_value))
         scores[value] = confidence
     return max(scores, key=scores.get)
-
-def create_flexible_date_from_formal_date(formal_date: str) -> FlexibleDate:
-    """Creates a FlexibleDate object from a formal date string.
-    
-    Args:
-        formal_date (str): an EDTF (Extended Date/Time Format) string.
-    
-    Raises:
-        ValueError: raised if input is not a valid EDTF string
-        
-    Returns:
-        FlexibleDate: the FlexibleDate object parsed from the EDTF string
-    """
-    if not isinstance(formal_date, str):
-        raise ValueError('formal_date must be a string') # should never happen
-    
-    try:
-        # Clean the input - remove '+' signs which aren't standard EDTF
-        cleaned_date = formal_date.replace('A+', '')
-        cleaned_date = cleaned_date.replace('+', '')
-        # Remove time and timezone info (e.g., T00:00:00Z) to keep only the date
-        cleaned_date = re.sub(r'T\d{2}:\d{2}:\d{2}Z', '', cleaned_date)
-        
-        edtf_obj = parse_edtf(cleaned_date)
-        
-        lower_date = edtf_obj.lower_strict()
-        upper_date = edtf_obj.upper_strict() if '/' in cleaned_date else None
-
-        likely_year = lower_date.tm_year if lower_date.tm_year != 9999 else None
-        likely_month = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_date.split('-')) > 1 else None
-        likely_day = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_date.split('-')) > 2 else None
-
-        if upper_date is not None:
-            [start_part, end_part] = cleaned_date.split('/')
-
-            is_year_range = _is_year_range(start_part, end_part, lower_date, upper_date)
-            is_month_range = _is_month_range(start_part, end_part, lower_date, upper_date)
-
-
-            if is_year_range:
-                likely_month = None
-                likely_day = None
-            
-            elif is_month_range:
-                likely_day = None
-        
-        return FlexibleDate(likely_year=likely_year, likely_month=likely_month, likely_day=likely_day)
-        
-    except Exception as e:
-        raise ValueError(f'Unable to parse EDTF string "{formal_date}": {str(e)}')
 
 def _is_year_range(start_part:str, end_part:str, lower_date:datetime, upper_date:datetime) -> bool:
     """Checks if the date is a year range.
@@ -314,45 +355,6 @@ def _is_month_range(start_part:str, end_part:str, lower_date:datetime, upper_dat
         lower_date.tm_mday == 1 and
         upper_date.tm_mday >= get_upper_month_range(upper_date.tm_mon)
     )
-
-def create_flexible_date(likely_date:str|None) -> FlexibleDate:
-    """Parses a string (or None) to create a FlexibleDate object. Attempts 
-    to parse international format first, then American format, then European.
-
-    Args:
-        likely_date (str | None): the input
-
-    Raises:
-        ValueError: raised if input not str or None
-
-    Returns:
-        FlexibleDate: the FlexibleDate object parsed from the input string
-    """    
-    # validate input
-    if likely_date is None or likely_date.strip() == "":
-        return FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
-    elif not isinstance(likely_date, str):
-        raise ValueError('likely_date must be str or None')
-    
-    # Defaults
-    likely_day = None
-    likely_month = None
-    likely_year = None
-    # Overwrite defaults if data is found
-    parsed_date, num_fields = _get_cleaned_date_and_num_fields(likely_date)
-    if num_fields >= 1:
-        if parsed_date.year != 9999:
-            likely_year = parsed_date.year
-    if num_fields >= 2:
-        likely_month = parsed_date.month
-    if num_fields == 3:
-        likely_day = parsed_date.day
-    # Initializing and return the fd
-    try:
-        fd = FlexibleDate(likely_day=likely_day, likely_month=likely_month, likely_year=likely_year)
-    except:
-        fd = FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
-    return fd
 
 class AncientDateTime(BaseModel):
     """Represents an ancient date because datetime objects can't have negative years.
