@@ -1,8 +1,5 @@
 from pathlib import Path
-from FlexibleDate.FlexibleDate import (
-    FlexibleDate,
-    combine_flexible_dates,
-)
+from FlexibleDate.FlexibleDate import FlexibleDate
 import pytest
 from pyscripttestutils import PyScriptTestRunner
 
@@ -12,7 +9,7 @@ runner = PyScriptTestRunner(
     deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
 )
 
-runner.add_method(combine_flexible_dates, "combineFlexibleDates")
+runner.add_method(FlexibleDate.combine_flexible_dates, "combineFlexibleDates")
 
 class TestBasicCombining:
     """Test fundamental combining operations."""
@@ -64,7 +61,7 @@ class TestBasicCombining:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
         py_result, ts_result = runner.run(
-            "combine_flexible_dates",
+            "FlexibleDate.combine_flexible_dates",
             "combineFlexibleDates",
             test_data
         )
@@ -113,7 +110,7 @@ class TestConsensus:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
         py_result, ts_result = runner.run(
-            "combine_flexible_dates",
+            "FlexibleDate.combine_flexible_dates",
             "combineFlexibleDates",
             test_data
         )
@@ -169,7 +166,7 @@ class TestConsensus:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
         py_result, ts_result = runner.run(
-            "combine_flexible_dates",
+            "FlexibleDate.combine_flexible_dates",
             "combineFlexibleDates",
             test_data
         )
@@ -241,7 +238,7 @@ class TestProximityScoring:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
         py_result, ts_result = runner.run(
-            "combine_flexible_dates",
+            "FlexibleDate.combine_flexible_dates",
             "combineFlexibleDates",
             test_data
         )
@@ -312,7 +309,7 @@ class TestPartialDates:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
         py_result, ts_result = runner.run(
-            "combine_flexible_dates",
+            "FlexibleDate.combine_flexible_dates",
             "combineFlexibleDates",
             test_data
         )
@@ -383,7 +380,7 @@ class TestNullValues:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
         py_result, ts_result = runner.run(
-            "combine_flexible_dates",
+            "FlexibleDate.combine_flexible_dates",
             "combineFlexibleDates",
             test_data
         )
@@ -440,7 +437,7 @@ class TestTieBreaking:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
         py_result, ts_result = runner.run(
-            "combine_flexible_dates",
+            "FlexibleDate.combine_flexible_dates",
             "combineFlexibleDates",
             test_data
         )
@@ -507,7 +504,7 @@ class TestMixedPrecision:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
         py_result, ts_result = runner.run(
-            "combine_flexible_dates",
+            "FlexibleDate.combine_flexible_dates",
             "combineFlexibleDates",
             test_data
         )
@@ -608,7 +605,7 @@ class TestEdgeCases:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         
         py_result, ts_result = runner.run(
-            "combine_flexible_dates",
+            "FlexibleDate.combine_flexible_dates",
             "combineFlexibleDates",
             test_data
         )

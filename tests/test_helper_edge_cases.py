@@ -1,8 +1,5 @@
 from pathlib import Path
-from FlexibleDate.FlexibleDate import (
-    FlexibleDate,
-    create_flexible_date,
-)
+from FlexibleDate.FlexibleDate import FlexibleDate
 import pytest
 from pyscripttestutils import PyScriptTestRunner
 
@@ -11,7 +8,7 @@ runner = PyScriptTestRunner(
     serializer = lambda d: {"likelyYear": d.likely_year, "likelyMonth": d.likely_month, "likelyDay": d.likely_day},
     deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
 )
-runner.add_method(create_flexible_date, "createFlexibleDate")
+runner.add_method(FlexibleDate.create_flexible_date, "createFlexibleDate")
 
 
 class TestEdgeCases:
@@ -73,7 +70,7 @@ class TestEdgeCases:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -153,7 +150,7 @@ class TestEdgeCases:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -193,7 +190,7 @@ class TestEdgeCases:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -228,7 +225,7 @@ class TestEdgeCases:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -263,7 +260,7 @@ class TestEdgeCases:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -293,7 +290,7 @@ class TestEdgeCases:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )
@@ -318,7 +315,7 @@ class TestEdgeCases:
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
-                "create_flexible_date",
+                "FlexibleDate.create_flexible_date",
                 "createFlexibleDate",
                 test_data
             )

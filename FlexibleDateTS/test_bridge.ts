@@ -28,8 +28,7 @@ const bridge = new PyScriptTestBridge(serializeFlexibleDate, deserializeFlexible
 bridge.addMethod("createFlexibleDate", (args) => new FlexibleDate(args[0]));
 
 bridge.addMethod("createFlexibleDateFromFormalDate", (args) => {
-    const fd = new FlexibleDate(null, null, null);
-    return fd.createFlexibleDateFromFormalDate(args[0]);
+    return FlexibleDate.createFlexibleDateFromFormalDate(args[0]);
 });
 
 bridge.addMethod("compareDates", (args) => args[0].compareDates(args[1]));

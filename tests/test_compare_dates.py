@@ -1,17 +1,14 @@
 from pathlib import Path
 import pytest
 from pyscripttestutils import PyScriptTestRunner
-from FlexibleDate.FlexibleDate import (
-    FlexibleDate,
-    compare_two_dates,
-)
+from FlexibleDate.FlexibleDate import FlexibleDate
 
 runner = PyScriptTestRunner(
     Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
     deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
 )
 
-runner.add_method(compare_two_dates, "compareDates", executor=lambda d: compare_two_dates(d[0], d[1]))
+runner.add_method(FlexibleDate.compare_dates, "compareDates", executor=lambda d: d[0].compare_dates(d[1]))
 
 class TestIdenticalDates:
     """Test comparison of identical dates returns perfect score of 100."""
@@ -47,7 +44,7 @@ class TestIdenticalDates:
     def test_identical_full_dates(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
         py_result, ts_result = runner.run(
-            "compare_two_dates",
+            "FlexibleDate.compare_dates",
             "compareDates",
             test_data
         )
@@ -87,7 +84,7 @@ class TestIdenticalDates:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
         py_result, ts_result = runner.run(
-            "compare_two_dates",
+            "FlexibleDate.compare_dates",
             "compareDates",
             test_data
         )
@@ -131,7 +128,7 @@ class TestSimilarDates:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
         py_result, ts_result = runner.run(
-            "compare_two_dates",
+            "FlexibleDate.compare_dates",
             "compareDates",
             test_data
         )
@@ -172,7 +169,7 @@ class TestSimilarDates:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
         py_result, ts_result = runner.run(
-            "compare_two_dates",
+            "FlexibleDate.compare_dates",
             "compareDates",
             test_data
         )
@@ -205,7 +202,7 @@ class TestSimilarDates:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
         py_result, ts_result = runner.run(
-            "compare_two_dates",
+            "FlexibleDate.compare_dates",
             "compareDates",
             test_data
         )
@@ -246,7 +243,7 @@ class TestSimilarDates:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
         py_result, ts_result = runner.run(
-            "compare_two_dates",
+            "FlexibleDate.compare_dates",
             "compareDates",
             test_data
         )
@@ -295,7 +292,7 @@ class TestSimilarDates:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
         py_result, ts_result = runner.run(
-            "compare_two_dates",
+            "FlexibleDate.compare_dates",
             "compareDates",
             test_data
         )
@@ -360,7 +357,7 @@ class TestSimilarDates:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
         py_result, ts_result = runner.run(
-            "compare_two_dates",
+            "FlexibleDate.compare_dates",
             "compareDates",
             test_data
         )
@@ -413,7 +410,7 @@ class TestBadDates:
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
         py_result, ts_result = runner.run(
-            "compare_two_dates",
+            "FlexibleDate.compare_dates",
             "compareDates",
             test_data
         )
