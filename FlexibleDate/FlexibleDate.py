@@ -134,8 +134,7 @@ class FlexibleDate(BaseModel):
         """Compares two flexible dates and gives the comparison a score.
 
         Args:
-            date1 (FlexibleDate): a FlexibleDate object
-            date2 (FlexibleDate): a FlexibleDate object
+            date_to_compare (FlexibleDate): a FlexibleDate object
 
         Returns:
             float | int: the score
