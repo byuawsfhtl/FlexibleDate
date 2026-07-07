@@ -505,8 +505,8 @@ class TestDifferentDates:
         )
         
         assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
-        # assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
-        # runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+        assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 class TestTieBreaking:
     """Test scenarios where confidence scores might be equal."""

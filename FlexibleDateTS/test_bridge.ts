@@ -34,9 +34,7 @@ bridge.addMethod("createFlexibleDateFromFormalDate", (args) => {
 bridge.addMethod("compareDates", (args) => args[0].compareDates(args[1]));
 
 bridge.addMethod("combineFlexibleDates", (args) => {
-    const dates = args as FlexibleDate[];
-    const fdTemp = new FlexibleDate(null, null, null);
-    return fdTemp.combineFlexibleDates(dates);
+    return FlexibleDate.combineFlexibleDates(args as FlexibleDate[]);
 });
 
 bridge.addMethod("FlexibleDate.toString", (args) => args[0].toString());

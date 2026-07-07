@@ -189,6 +189,9 @@ class FlexibleDate(BaseModel):
         Returns:
             FlexibleDate: the combined FlexibleDate that best represents the date of the event.
         """
+        if len(dates) == 1:
+            return dates[0]
+        
         best_year = FlexibleDate._choose_best_value("likely_year", dates)
         remaining_dates = [date for date in dates if date.likely_year == best_year or date.likely_year is None]
 
