@@ -369,15 +369,13 @@ export default class FlexibleDate {
                 : best;
         }, { frequency: 0, specificity: 0 });
         const mostFrequentValues = frequenciesAndSpecificities.filter((x: { frequency: number, specificity: number }) => x.frequency === bestFrequency.frequency);
-        const mostFrequentValue = mostFrequentValues.sort((a: { attribute: number }, b: { attribute: number }) => a.attribute - b.attribute)[(mostFrequentValues.length - 1) / 2];
+        const mostFrequentValue = mostFrequentValues.sort((a: { attribute: number }, b: { attribute: number }) => a.attribute - b.attribute)[Math.floor((mostFrequentValues.length - 1) / 2)];
 
         const bestSpecificity = frequenciesAndSpecificities.reduce((best: { frequency: number, specificity: number }, curr: { frequency: number, specificity: number }) => {
-            return curr.specificity > best.specificity ? curr
-                : curr.specificity === best.specificity && curr.frequency > best.frequency ? curr
-                : best;
+            return curr.specificity > best.specificity ? curr : best;
         }, { frequency: 0, specificity: 0 });
         const mostSpecificValues = frequenciesAndSpecificities.filter((x: { frequency: number, specificity: number }) => x.specificity === bestSpecificity.specificity);
-        const mostSpecificValue = mostSpecificValues.sort((a: { attribute: number }, b: { attribute: number }) => a.attribute - b.attribute)[(mostSpecificValues.length - 1) / 2];
+        const mostSpecificValue = mostSpecificValues.sort((a: { attribute: number }, b: { attribute: number }) => a.attribute - b.attribute)[Math.floor((mostSpecificValues.length - 1) / 2)];
 
         let bestValue = mostFrequentValue;
         if (mostSpecificValue.frequency > mostFrequentValue.frequency * 0.75) {
