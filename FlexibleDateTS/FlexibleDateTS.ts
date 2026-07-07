@@ -340,20 +340,80 @@ export default class FlexibleDate {
         return Array.from(scores.entries()).reduce((best, curr) => curr[1] > best[1] ? curr : best)[0];
     }
 
-    public combineFlexibleDates(dates: FlexibleDate[]) : FlexibleDate {
+    public static combineFlexibleDates(dates: FlexibleDate[]) : FlexibleDate {
         // If there's only one date, return it as is
         if (dates.length === 1) {
             return dates[0];
         }
         
-        const allYears = dates.map(date => date.likelyYear);
-        const allMonths = dates.map(date => date.likelyMonth);
-        const allDays = dates.map(date => date.likelyDay);
-        const year = allYears.length > 0 ? FlexibleDate.chooseMostReasonableValue(allYears) : null;
-        const month = allMonths.length > 0 ? FlexibleDate.chooseMostReasonableValue(allMonths) : null;
-        const day = allDays.length > 0 ? FlexibleDate.chooseMostReasonableValue(allDays) : null;
+        const bestYear = FlexibleDate._chooseBestValue("likelyYear", dates);
+        let remainingDates = dates.filter(date => date.likelyYear === bestYear || date.likelyYear === null);
 
-        return new FlexibleDate(day, month, year);
+        const bestMonth = FlexibleDate._chooseBestValue("likelyMonth", remainingDates);
+        remainingDates = remainingDates.filter(date => date.likelyMonth === bestMonth || date.likelyMonth === null);
+
+        const bestDay = FlexibleDate._chooseBestValue("likelyDay", remainingDates);
+
+        return new FlexibleDate(bestDay, bestMonth, bestYear);
+    }
+
+    private static _chooseBestValue(valueType: "likelyYear" | "likelyMonth" | "likelyDay", dates: FlexibleDate[]): number | null {
+        const SIGNIFICANT_VALUE_DIFFERENCE = 3;
+        const SIGNIFICANT_FREQUENCY_GAP = 0.25;
+
+        const frequenciesAndSpecificities = FlexibleDate._buildFrequencyMap(valueType, dates);
+        if (frequenciesAndSpecificities.length === 0) {
+            return null;
+        }
+
+        const bestFrequencyInitVal = frequenciesAndSpecificities.reduce((best: { frequency: number, specificity: number }, curr: { frequency: number, specificity: number }) => {
+            return curr.frequency > best.frequency ? curr
+                : best;
+        }, { frequency: 0, specificity: 0 });
+        const mostFrequentValues = frequenciesAndSpecificities.filter((x: { frequency: number, specificity: number }) => x.frequency === bestFrequencyInitVal.frequency && x.specificity >= bestFrequencyInitVal.specificity);
+        const mostFrequentValue = mostFrequentValues.sort((a: { attribute: number }, b: { attribute: number }) => a.attribute - b.attribute)[Math.floor((mostFrequentValues.length - 1) / 2)];
+
+        const bestSpecificityInitVal = frequenciesAndSpecificities.reduce((best: { frequency: number, specificity: number }, curr: { frequency: number, specificity: number }) => {
+            return curr.specificity > best.specificity ? curr 
+            : curr.specificity === best.specificity && curr.frequency > best.frequency ? curr
+            : best;
+        }, { frequency: 0, specificity: 0 });
+        const mostSpecificValues = frequenciesAndSpecificities.filter((x: { frequency: number, specificity: number }) => x.specificity === bestSpecificityInitVal.specificity && x.frequency >= bestSpecificityInitVal.frequency);
+        const mostSpecificValue = mostSpecificValues.sort((a: { attribute: number }, b: { attribute: number }) => a.attribute - b.attribute)[Math.floor((mostSpecificValues.length - 1) / 2)];
+
+        const difference = Math.abs(mostSpecificValue.attribute - mostFrequentValue.attribute);
+
+        let bestValue = mostSpecificValue;
+        if (mostSpecificValue.frequency < mostFrequentValue.frequency * SIGNIFICANT_FREQUENCY_GAP && difference > SIGNIFICANT_VALUE_DIFFERENCE) {
+            bestValue = mostFrequentValue;
+        }
+
+        return bestValue.attribute;
+    }
+
+    private static _buildFrequencyMap(valueType: "likelyYear" | "likelyMonth" | "likelyDay", dates: FlexibleDate[]): { attribute: number, frequency: number, specificity: number }[] {
+        const frequencyMap = new Map<number, number>();
+        const specificityMap = new Map<number, number>();
+        for (const date of dates) {
+            const attr = date[valueType];
+            if (attr === null || attr === undefined) continue;
+
+            const dateSpecificity = date.inspect().split('-').length;
+
+            if (!frequencyMap.has(attr)) {
+                frequencyMap.set(attr, 1);
+                specificityMap.set(attr, dateSpecificity);
+            } else {
+                const knownSpecificity = specificityMap.get(attr)!;
+                if (dateSpecificity > knownSpecificity) {
+                    specificityMap.set(attr, dateSpecificity);
+                }
+                frequencyMap.set(attr, frequencyMap.get(attr)! + 1);
+            }
+        }
+
+        const frequenciesAndSpecificities = Array.from(frequencyMap.entries()).map(([attribute, frequency]) => ({ attribute, frequency, specificity: specificityMap.get(attribute)! }));
+        return frequenciesAndSpecificities;
     }
 
     private static parseWithDateUtil(likelyDate: string): [Date, number] {
