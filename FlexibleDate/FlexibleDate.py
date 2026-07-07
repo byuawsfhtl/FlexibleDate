@@ -264,8 +264,11 @@ class FlexibleDate(BaseModel):
         # validate input
         if likely_date is None or likely_date.strip() == "":
             return FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
-        elif not isinstance(likely_date, str):
-            raise ValueError('likely_date must be str or None')
+
+        try:
+            FlexibleDate.create_flexible_date_from_formal_date(likely_date)
+        except ValueError:
+            pass
         
         # Defaults
         likely_day = None
