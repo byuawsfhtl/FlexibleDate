@@ -1,3 +1,4 @@
+from statistics import median
 from pydantic import BaseModel, field_validator
 from typing import Optional, Literal
 from unidecode import unidecode
@@ -188,13 +189,13 @@ class FlexibleDate(BaseModel):
         Returns:
             FlexibleDate: the combined FlexibleDate that best represents the date of the event.
         """
-        best_year = FlexibleDate._choose_best_value("likely_year", dates)["attribute"]
+        best_year = FlexibleDate._choose_best_value("likely_year", dates)
         remaining_dates = [date for date in dates if date.likely_year == best_year]
 
-        best_month = FlexibleDate._choose_best_value("likely_month", remaining_dates)["attribute"]
+        best_month = FlexibleDate._choose_best_value("likely_month", remaining_dates)
         remaining_dates = [date for date in remaining_dates if date.likely_month == best_month]
 
-        best_day = FlexibleDate._choose_best_value("likely_day", remaining_dates)["attribute"]
+        best_day = FlexibleDate._choose_best_value("likely_day", remaining_dates)
 
         return FlexibleDate(likely_year=best_year, likely_month=best_month, likely_day=best_day)
 
@@ -209,26 +210,28 @@ class FlexibleDate(BaseModel):
         Returns:
             The best value
         """
-        frequencies_and_specificities = FlexibleDate._build_frequency_maps(value_type, dates)
+        frequencies_and_specificities = FlexibleDate._build_frequency_map(value_type, dates)
         if len(frequencies_and_specificities) == 0:
-            return {"attribute": None, "frequency": None, "specificity": None}
+            return None
             
-        most_frequent_value = max(frequencies_and_specificities, key=lambda x: (x["frequency"], x["specificity"]))
-        best_frequency = most_frequent_value["frequency"]
+        best_frequency = max(frequencies_and_specificities, key=lambda x: (x["frequency"], x["specificity"]))["frequency"]
+        most_frequent_values = [x for x in frequencies_and_specificities if x["frequency"] == best_frequency]
+        most_frequent_value = sorted(most_frequent_values, key=lambda x: x["attribute"])[(len(most_frequent_values) - 1) // 2]
 
-        most_specific_value = max(frequencies_and_specificities, key=lambda x: (x["specificity"], x["frequency"]))
-        best_specificity = most_specific_value["specificity"]
+        best_specificity = max(frequencies_and_specificities, key=lambda x: x["specificity"])["specificity"]
+        most_specific_values = [x for x in frequencies_and_specificities if x["specificity"] == best_specificity]
+        most_specific_value = sorted(most_specific_values, key=lambda x: x["attribute"])[(len(most_specific_values) - 1) // 2]
 
-        frequency_of_most_specific_value = most_specific_value["frequency"]
-        specificity_of_most_frequent_value = most_frequent_value["specificity"]
+        best_value = most_frequent_value
+        if most_specific_value["frequency"] > most_frequent_value["frequency"] * 0.75:
+            best_value = most_specific_value
 
-        if frequency_of_most_specific_value > best_frequency/2 and specificity_of_most_frequent_value:
-            return most_specific_value
-        return most_frequent_value
+        return best_value["attribute"]
             
+        
 
     @staticmethod
-    def _build_frequency_maps(attribute: Literal["likely_year", "likely_month", "likely_day"], dates: list['FlexibleDate']) -> list[dict[str, int]]:
+    def _build_frequency_map(attribute: Literal["likely_year", "likely_month", "likely_day"], dates: list['FlexibleDate']) -> list[dict[str, int]]:
         """Builds a frequency map for a given attribute.
         
         Args:
