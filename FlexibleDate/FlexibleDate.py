@@ -213,21 +213,26 @@ class FlexibleDate(BaseModel):
         Returns:
             The best value
         """
+        SIGNIFICANT_VALUE_DIFFERENCE = 3
+        SIGNIFICANT_FREQUENCY_GAP = 0.25
+        
         frequencies_and_specificities = FlexibleDate._build_frequency_map(value_type, dates)
         if len(frequencies_and_specificities) == 0:
             return None
             
-        best_frequency = max(frequencies_and_specificities, key=lambda x: (x["frequency"], x["specificity"]))["frequency"]
-        most_frequent_values = [x for x in frequencies_and_specificities if x["frequency"] == best_frequency]
+        best_frequency_init_val = max(frequencies_and_specificities, key=lambda x: (x["frequency"]))
+        most_frequent_values = [x for x in frequencies_and_specificities if x["frequency"] == best_frequency_init_val["frequency"] and x["specificity"] >= best_frequency_init_val["specificity"]]
         most_frequent_value = sorted(most_frequent_values, key=lambda x: x["attribute"])[(len(most_frequent_values) - 1) // 2]
 
-        best_specificity = max(frequencies_and_specificities, key=lambda x: x["specificity"])["specificity"]
-        most_specific_values = [x for x in frequencies_and_specificities if x["specificity"] == best_specificity]
+        best_specificity_init_val = max(frequencies_and_specificities, key=lambda x: (x["specificity"], x["frequency"]))
+        most_specific_values = [x for x in frequencies_and_specificities if x["specificity"] == best_specificity_init_val["specificity"] and x["frequency"] >= best_specificity_init_val["frequency"]]
         most_specific_value = sorted(most_specific_values, key=lambda x: x["attribute"])[(len(most_specific_values) - 1) // 2]
 
-        best_value = most_frequent_value
-        if most_specific_value["frequency"] > most_frequent_value["frequency"] * 0.75:
-            best_value = most_specific_value
+        difference = abs(most_specific_value["attribute"] - most_frequent_value["attribute"])
+
+        best_value = most_specific_value
+        if most_specific_value["frequency"] < most_frequent_value["frequency"] * SIGNIFICANT_FREQUENCY_GAP and difference > SIGNIFICANT_VALUE_DIFFERENCE:
+            best_value = most_frequent_value
 
         return best_value["attribute"]
             

@@ -358,28 +358,34 @@ export default class FlexibleDate {
     }
 
     private static _chooseBestValue(valueType: "likelyYear" | "likelyMonth" | "likelyDay", dates: FlexibleDate[]): number | null {
+        const SIGNIFICANT_VALUE_DIFFERENCE = 3;
+        const SIGNIFICANT_FREQUENCY_GAP = 0.25;
+
         const frequenciesAndSpecificities = FlexibleDate._buildFrequencyMap(valueType, dates);
         if (frequenciesAndSpecificities.length === 0) {
             return null;
         }
 
-        const bestFrequency = frequenciesAndSpecificities.reduce((best: { frequency: number, specificity: number }, curr: { frequency: number, specificity: number }) => {
+        const bestFrequencyInitVal = frequenciesAndSpecificities.reduce((best: { frequency: number, specificity: number }, curr: { frequency: number, specificity: number }) => {
             return curr.frequency > best.frequency ? curr
-                : curr.frequency === best.frequency && curr.specificity > best.specificity ? curr
                 : best;
         }, { frequency: 0, specificity: 0 });
-        const mostFrequentValues = frequenciesAndSpecificities.filter((x: { frequency: number, specificity: number }) => x.frequency === bestFrequency.frequency);
+        const mostFrequentValues = frequenciesAndSpecificities.filter((x: { frequency: number, specificity: number }) => x.frequency === bestFrequencyInitVal.frequency && x.specificity >= bestFrequencyInitVal.specificity);
         const mostFrequentValue = mostFrequentValues.sort((a: { attribute: number }, b: { attribute: number }) => a.attribute - b.attribute)[Math.floor((mostFrequentValues.length - 1) / 2)];
 
-        const bestSpecificity = frequenciesAndSpecificities.reduce((best: { frequency: number, specificity: number }, curr: { frequency: number, specificity: number }) => {
-            return curr.specificity > best.specificity ? curr : best;
+        const bestSpecificityInitVal = frequenciesAndSpecificities.reduce((best: { frequency: number, specificity: number }, curr: { frequency: number, specificity: number }) => {
+            return curr.specificity > best.specificity ? curr 
+            : curr.specificity === best.specificity && curr.frequency > best.frequency ? curr
+            : best;
         }, { frequency: 0, specificity: 0 });
-        const mostSpecificValues = frequenciesAndSpecificities.filter((x: { frequency: number, specificity: number }) => x.specificity === bestSpecificity.specificity);
+        const mostSpecificValues = frequenciesAndSpecificities.filter((x: { frequency: number, specificity: number }) => x.specificity === bestSpecificityInitVal.specificity && x.frequency >= bestSpecificityInitVal.frequency);
         const mostSpecificValue = mostSpecificValues.sort((a: { attribute: number }, b: { attribute: number }) => a.attribute - b.attribute)[Math.floor((mostSpecificValues.length - 1) / 2)];
 
-        let bestValue = mostFrequentValue;
-        if (mostSpecificValue.frequency > mostFrequentValue.frequency * 0.75) {
-            bestValue = mostSpecificValue;
+        const difference = Math.abs(mostSpecificValue.attribute - mostFrequentValue.attribute);
+
+        let bestValue = mostSpecificValue;
+        if (mostSpecificValue.frequency < mostFrequentValue.frequency * SIGNIFICANT_FREQUENCY_GAP && difference > SIGNIFICANT_VALUE_DIFFERENCE) {
+            bestValue = mostFrequentValue;
         }
 
         return bestValue.attribute;

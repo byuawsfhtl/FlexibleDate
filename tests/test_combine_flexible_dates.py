@@ -415,8 +415,8 @@ class TestDifferentDates:
                 {"likelyYear": 2016, "likelyMonth": None, "likelyDay": None},
                 {"likelyYear": 2016, "likelyMonth": None, "likelyDay": None},
             ],
-            "expected": {"likelyYear": 2016, "likelyMonth": None, "likelyDay": None},
-            "description": "Doesn't mangle years with months/days"
+            "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+            "description": "Specific dates carry more weight than year-only dates"
         },
         {
             "input": [
@@ -430,7 +430,7 @@ class TestDifferentDates:
                 {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
                 {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
             ],
-            "expected": {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+            "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
             "description": "Uses most frequent date when other options disagree with each other"
         },
         {
@@ -603,7 +603,7 @@ class TestMixedPrecision:
                 {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": None},
                 {"likelyYear": 2020, "likelyMonth": 6, "likelyDay": 15}
             ],
-            "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": None},
+            "expected": {"likelyYear": 2020, "likelyMonth": 6, "likelyDay": 15},
             "description": "year-month dates with different month consensus"
         },
         {
@@ -715,6 +715,44 @@ class TestEdgeCases:
             ],
             "expected": {"likelyYear": 2020, "likelyMonth": 3, "likelyDay": None},
             "description": "six consecutive months (proximity clustering)"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+            ],
+            "expected": {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+            "description": "many year-only dates are overriden by one near date"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2025, "likelyMonth": 5, "likelyDay": 15},
+            ],
+            "expected": {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+            "description": "many year-only dates are not overriden by one far date"
         }
     ]
 
