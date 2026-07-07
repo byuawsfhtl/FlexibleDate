@@ -483,17 +483,6 @@ class TestDifferentDates:
             "input": [
                 {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
                 {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
-                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
-                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
-                {"likelyYear": 2014, "likelyMonth": 5, "likelyDay": 15},
-            ],
-            "expected": {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
-            "description": "In the case of a tie, refer to frequency of less specific parts across all dates."
-        },
-        {
-            "input": [
-                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
-                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
                 {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
                 {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
                 {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},

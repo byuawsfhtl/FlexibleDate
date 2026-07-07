@@ -213,7 +213,7 @@ class FlexibleDate(BaseModel):
         if len(frequencies_and_specificities) == 0:
             return {"attribute": None, "frequency": None, "specificity": None}
             
-        most_frequent_value = max(frequencies_and_specificities, key=lambda x: x["frequency"])
+        most_frequent_value = max(frequencies_and_specificities, key=lambda x: (x["frequency"], x["specificity"]))
         best_frequency = most_frequent_value["frequency"]
 
         most_specific_value = max(frequencies_and_specificities, key=lambda x: (x["specificity"], x["frequency"]))
