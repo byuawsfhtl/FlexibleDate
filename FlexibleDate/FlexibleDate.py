@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator
-from typing import Optional
+from typing import Optional, Literal
 from unidecode import unidecode
 from dateutil.parser import parse, ParserError
 from datetime import datetime
@@ -188,13 +188,78 @@ class FlexibleDate(BaseModel):
         Returns:
             FlexibleDate: the combined FlexibleDate that best represents the date of the event.
         """
-        all_years = [date.likely_year for date in dates]
-        all_months = [date.likely_month for date in dates]
-        all_days = [date.likely_day for date in dates]
-        year = _choose_most_resonable_value(all_years)
-        month = _choose_most_resonable_value(all_months)
-        day = _choose_most_resonable_value(all_days)
-        return FlexibleDate(likely_year=year, likely_month=month, likely_day=day)
+        best_year = FlexibleDate._choose_best_value("likely_year", dates)["attribute"]
+        remaining_dates = [date for date in dates if date.likely_year == best_year]
+
+        best_month = FlexibleDate._choose_best_value("likely_month", remaining_dates)["attribute"]
+        remaining_dates = [date for date in remaining_dates if date.likely_month == best_month]
+
+        best_day = FlexibleDate._choose_best_value("likely_day", remaining_dates)["attribute"]
+
+        return FlexibleDate(likely_year=best_year, likely_month=best_month, likely_day=best_day)
+
+    @staticmethod
+    def _choose_best_value(value_type: Literal["likely_year", "likely_month", "likely_day"], dates: list['FlexibleDate']) -> int | None:
+        """Chooses the best value. Can compromise for a middle value.
+        
+        Args:
+            value_type: the type of value to choose: likely_year, likely_month, or likely_day
+            dates: a list of FlexibleDates for a specific event
+
+        Returns:
+            The best value
+        """
+        frequencies_and_specificities = FlexibleDate._build_frequency_maps(value_type, dates)
+        if len(frequencies_and_specificities) == 0:
+            return {"attribute": None, "frequency": None, "specificity": None}
+            
+        most_frequent_value = max(frequencies_and_specificities, key=lambda x: x["frequency"])
+        best_frequency = most_frequent_value["frequency"]
+
+        most_specific_value = max(frequencies_and_specificities, key=lambda x: (x["specificity"], x["frequency"]))
+        best_specificity = most_specific_value["specificity"]
+
+        frequency_of_most_specific_value = most_specific_value["frequency"]
+        specificity_of_most_frequent_value = most_frequent_value["specificity"]
+
+        if frequency_of_most_specific_value > best_frequency/2 and specificity_of_most_frequent_value:
+            return most_specific_value
+        return most_frequent_value
+            
+
+    @staticmethod
+    def _build_frequency_maps(attribute: Literal["likely_year", "likely_month", "likely_day"], dates: list['FlexibleDate']) -> list[dict[str, int]]:
+        """Builds a frequency map for a given attribute.
+        
+        Args:
+            attribute: the attribute to build the frequency map for: likely_year, likely_month, or likely_day
+            dates: a list of FlexibleDates for a specific event
+
+        Returns:
+            List of dictionaries representing the frequency and specificity of each value
+            [{"attribute": attribute, "frequency": frequency, "specificity": specificity}, ...]
+        """
+        frequency_map = {}
+        specificity_map = {}
+        for date in dates:
+            attr = getattr(date, attribute)
+            if attr is None: continue
+
+            date_specificity = len(repr(date).split('-'))
+
+            if attr not in frequency_map:
+                frequency_map[attr] = 1
+                specificity_map[attr] = date_specificity
+            else:
+                known_specificity = specificity_map[attr]
+                if date_specificity > known_specificity:
+                    specificity_map[attr] = date_specificity
+
+                frequency_map[attr] += 1
+
+        frequencies_and_specificities = [{"attribute": attribute, "frequency": frequency_map[attribute], "specificity": specificity_map[attribute]} for attribute in frequency_map.keys()]
+        return frequencies_and_specificities
+
 
     @staticmethod
     def create_flexible_date_from_formal_date(formal_date: str) -> 'FlexibleDate':

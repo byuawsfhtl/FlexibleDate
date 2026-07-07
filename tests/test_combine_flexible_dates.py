@@ -389,6 +389,135 @@ class TestNullValues:
         assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
         runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
+class TestDifferentDates:
+    """Test scenarios where dates are different."""
+
+    cases = [
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2025, "likelyMonth": 8, "likelyDay": 22},
+            ],
+            "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+            "description": "Several years apart chooses the first year"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2016, "likelyMonth": None, "likelyDay": None},
+            ],
+            "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+            "description": "Chooses most specific date on tie"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2016, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2016, "likelyMonth": None, "likelyDay": None},
+            ],
+            "expected": {"likelyYear": 2016, "likelyMonth": None, "likelyDay": None},
+            "description": "Doesn't mangle years with months/days"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 18},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 18},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+            ],
+            "expected": {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+            "description": "Uses most frequent date when other options disagree with each other"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 18},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 18},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2021, "likelyMonth": None, "likelyDay": None},
+            ],
+            "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+            "description": "Chooses most specific date when multiple specific dates agree"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+            ],
+            "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+            "description": "Allows rejected years to support months/days from the accepted year"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
+                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
+                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
+                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+            ],
+            "expected": {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
+            "description": "Rejected years don't override accepted year/month/day"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
+                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2014, "likelyMonth": 5, "likelyDay": 15},
+            ],
+            "expected": {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+            "description": "In the case of a tie, refer to frequency of less specific parts across all dates."
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
+                {"likelyYear": 2020, "likelyMonth": 8, "likelyDay": 14},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+                {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+            ],
+            "expected": {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
+            "description": "Sanity check case"
+        }
+    ]
+
+    @pytest.mark.parametrize("test_case", cases, ids=lambda x: x['description'])
+    def test_different_dates(self, test_case):
+        test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
+        
+        py_result, ts_result = runner.run(
+            "FlexibleDate.combine_flexible_dates",
+            "combineFlexibleDates",
+            test_data
+        )
+        
+        assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
+        # assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
+        # runner.assert_strict_parity(py_result, ts_result, test_case['description'])
 
 class TestTieBreaking:
     """Test scenarios where confidence scores might be equal."""
