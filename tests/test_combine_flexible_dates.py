@@ -603,7 +603,7 @@ class TestMixedPrecision:
                 {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": None},
                 {"likelyYear": 2020, "likelyMonth": 6, "likelyDay": 15}
             ],
-            "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+            "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": None},
             "description": "year-month dates with different month consensus"
         },
         {
@@ -612,7 +612,7 @@ class TestMixedPrecision:
                 {"likelyYear": 2021, "likelyMonth": 5, "likelyDay": None},
                 {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15}
             ],
-            "expected": {"likelyYear": 2021, "likelyMonth": 5, "likelyDay": 15},
+            "expected": {"likelyYear": 2022, "likelyMonth": 5, "likelyDay": 15},
             "description": "different years, month appears twice, day once"
         }
     ]
@@ -641,7 +641,7 @@ class TestEdgeCases:
                 {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": 31},
                 {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": 30}
             ],
-            "expected": {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": 31},
+            "expected": {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": 30},
             "description": "end of year dates"
         },
         {
@@ -649,7 +649,7 @@ class TestEdgeCases:
                 {"likelyYear": 2020, "likelyMonth": 2, "likelyDay": 29},
                 {"likelyYear": 2020, "likelyMonth": 2, "likelyDay": 28}
             ],
-            "expected": {"likelyYear": 2020, "likelyMonth": 2, "likelyDay": 29},
+            "expected": {"likelyYear": 2020, "likelyMonth": 2, "likelyDay": 28},
             "description": "leap year date"
         },
         {

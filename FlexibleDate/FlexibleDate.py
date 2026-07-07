@@ -190,10 +190,10 @@ class FlexibleDate(BaseModel):
             FlexibleDate: the combined FlexibleDate that best represents the date of the event.
         """
         best_year = FlexibleDate._choose_best_value("likely_year", dates)
-        remaining_dates = [date for date in dates if date.likely_year == best_year]
+        remaining_dates = [date for date in dates if date.likely_year == best_year or date.likely_year is None]
 
         best_month = FlexibleDate._choose_best_value("likely_month", remaining_dates)
-        remaining_dates = [date for date in remaining_dates if date.likely_month == best_month]
+        remaining_dates = [date for date in remaining_dates if date.likely_month == best_month or date.likely_month is None]
 
         best_day = FlexibleDate._choose_best_value("likely_day", remaining_dates)
 
