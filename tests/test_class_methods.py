@@ -5,7 +5,7 @@ from pyscripttestutils import PyScriptTestRunner
 
 runner = PyScriptTestRunner(
     Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
-    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
+    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"], modifier=d["modifier"]),
 )
 
 runner.add_method(FlexibleDate.__bool__, "FlexibleDate.valueOf", executor=lambda d: bool(d))

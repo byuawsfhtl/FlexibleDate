@@ -5,7 +5,7 @@ from FlexibleDate.FlexibleDate import FlexibleDate
 
 runner = PyScriptTestRunner(
     Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
-    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
+    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"], modifier=d["modifier"]),
 )
 
 runner.add_method(FlexibleDate.compare_dates, "compareDates", executor=lambda d: d[0].compare_dates(d[1]))

@@ -27,24 +27,36 @@ class AncientDateTime {
     }
 }
 
+export enum DateModifier {
+    ABOUT = "about",
+    BEFORE = "before", 
+    AFTER = "after"
+}
+
+
 export default class FlexibleDate {
-    likelyYear?: number | null;
-    likelyMonth?: number | null;
-    likelyDay?: number | null;
+    likelyYear?: number | null = null;
+    likelyMonth?: number | null = null;
+    likelyDay?: number | null = null;
+    modifier?: DateModifier | null = null;
+
+    static readonly ABOUT_ALIASES = ["about", "abt", "circa", "cir", "ca.", "ca ", "c.", "late", "early", "approx", "approximately", "est", "estimated", "cal", "calc", "calculated", "say", "around", "sometime"] as const;
 
     constructor(likelyDate: string | null);
-    constructor(likelyDay: number | null, likelyMonth: number | null, likelyYear: number | null);
-    constructor(arg1: string | number | null, arg2?: number | null, arg3?: number | null) {
+    constructor(likelyDay: number | null, likelyMonth: number | null, likelyYear: number | null, modifier?: DateModifier | null);
+    constructor(arg1: string | number | null, arg2?: number | null, arg3?: number | null, arg4?: DateModifier | null) {
       if (typeof arg1 === "string") {
         const date = FlexibleDate.createFlexibleDate(arg1);
         this.likelyDay = date.likelyDay;
         this.likelyMonth = date.likelyMonth;
-        this.likelyYear = date. likelyYear;
+        this.likelyYear = date.likelyYear;
+        this.modifier = date.modifier;
       } 
       else {
         this.likelyDay = arg1 ?? null;
         this.likelyMonth = arg2 ?? null;
         this.likelyYear = arg3 ?? null;
+        this.modifier = arg4 ?? null
       }
 
       this.validateFields();
@@ -172,12 +184,15 @@ export default class FlexibleDate {
 
     /**Creates a FlexibleDate object from a formal date string.
     *
-    * @param formalDate (str): an EDTF (Extended Date/Time Format) string such as:
-            "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
-            "+1910/+1910" (year range)
-            "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)    
-    * @throws ValueError: raised if input is not a valid EDTF string        
-    * @returns FlexibleDate: the FlexibleDate object parsed from the EDTF string
+    * @param formalDate (str): a GEDCOMX date format string such as:
+            - "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
+            - "+1910/+1910" (year range)
+            - "/+1887-03" (open-ended before date range)
+            - "+1976-07-11/" (open-ended after date range)
+            - "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
+            - "A+2014-08" (approximate date)
+    * @throws ValueError: raised if input is not valid GEDCOMX date format and cannot be converted to a valid EDTF (Extended Date/Time Format) string      
+    * @returns FlexibleDate: the FlexibleDate object parsed from the GEDCOMX date format string
     */
     public static createFlexibleDateFromFormalDate(formalDate: string): FlexibleDate {
 
@@ -186,9 +201,32 @@ export default class FlexibleDate {
         }
         
         try {
-            // Clean the input - remove '+' signs which aren't standard EDTF
-            let cleanedDate = formalDate.replace(/A\+/, '')
-            cleanedDate = cleanedDate.replace(/\+/g, '')
+            let modifier = null;
+            if (formalDate.includes('A')) {
+                modifier = DateModifier.ABOUT;
+            }
+            let cleanedDate = formalDate.replace(/A/g, '');
+            // Remove '+' signs which aren't standard EDTF
+            cleanedDate = cleanedDate.replace(/\+/g, '');
+            // Remove time and timezone info (e.g., T00:00:00Z) to keep only the date
+            cleanedDate = cleanedDate.replace(/T\d{2}:\d{2}:\d{2}Z?/g, '');
+            // Remove repetition info (e.g. R; /R10; R10/)
+            cleanedDate = cleanedDate.replace(/\/?R\d*\/?/g, '');
+            // Remove duration info (e.g. P; /P12Y; P/)
+            cleanedDate = cleanedDate.replace(/\/?P\w*\/?/g, '');
+
+            // Check if includes syntax for after or before (e.g. 1900/; /1900; 1900/2000)
+            const hasAfter = /\d+\//.test(cleanedDate);
+            const hasBefore = /\/-?\d+/.test(cleanedDate);
+            if (hasAfter && !hasBefore) {
+                modifier = DateModifier.AFTER;
+            }
+            if (hasBefore && !hasAfter) {
+                modifier = DateModifier.BEFORE;
+            }
+            //Remove leading and trailing '/'
+            cleanedDate = cleanedDate.replace(/^\//g, '');
+            cleanedDate = cleanedDate.replace(/\/$/g, '');
             
             let edtfObj = edtf.parse(cleanedDate) as {
                 type: string;
@@ -265,7 +303,7 @@ export default class FlexibleDate {
                 }
             }
 
-            return new FlexibleDate(likelyDay, likelyMonth, likelyYear)
+            return new FlexibleDate(likelyDay, likelyMonth, likelyYear, modifier)
         } catch (error) {
             throw new Error(`Unable to parse EDTF string "${formalDate}": ${error}`)
         }

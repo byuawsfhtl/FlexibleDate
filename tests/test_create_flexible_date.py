@@ -5,7 +5,7 @@ from FlexibleDate.FlexibleDate import FlexibleDate
 
 runner = PyScriptTestRunner(
     Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
-    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
+    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"], modifier=d["modifier"]),
 )
 
 runner.add_method(FlexibleDate.create_flexible_date, "createFlexibleDate")
@@ -204,34 +204,54 @@ class TestCreateFlexibleDateFromFormalDate:
         full_edtf_cases = [
             {
                 "input": "2020-01-15",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "simple EDTF date"
             },
             {
                 "input": "+2020-01-15",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "EDTF with plus prefix"
             },
             {
                 "input": "2020-01-01/2020-12-31",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=2020),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=2020, modifier=None),
                 "description": "date range within year"
             },
             {
                 "input": "+1526-01-01/+2020-12-31",
-                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=1526),
+                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=1526, modifier=None),
                 "description": "long date range with plus"
             },
             {
                 "input": "2020-01-15T10:30:00Z",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "EDTF with time and timezone"
             },
             {
                 "input": "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910, modifier=None),
                 "description": "datetime range"
-            }
+            },
+            {
+                "input": "+1933-02-19/P74Y",
+                "expected": FlexibleDate(likely_day=19, likely_month=2, likely_year=1933, modifier=None),
+                "description": "date with duration"
+            },
+            {
+                "input": "+1976-07-11/",
+                "expected": FlexibleDate(likely_day=11, likely_month=7, likely_year=1976, modifier=FlexibleDate.DateModifier.AFTER),
+                "description": "date with after date range"
+            },
+            {
+                "input": "/+1887-03-12",
+                "expected": FlexibleDate(likely_day=12, likely_month=3, likely_year=1887, modifier=FlexibleDate.DateModifier.BEFORE),
+                "description": "date with before date range"
+            },
+            {
+                "input": "R4/+1776-04-02/+1776-04-09",
+                "expected": FlexibleDate(likely_day=2, likely_month=4, likely_year=1776, modifier=None),
+                "description": "long date range with plus and recurring information"
+            },
         ]
         
         @pytest.mark.parametrize("test_case", full_edtf_cases, ids=lambda x: x['description'])
@@ -254,34 +274,44 @@ class TestCreateFlexibleDateFromFormalDate:
         partial_edtf_cases = [
             {
                 "input": "1945",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945, modifier=None),
                 "description": "year only EDTF"
             },
             {
                 "input": "1945-05",
-                "expected": FlexibleDate(likely_day=None, likely_month=5, likely_year=1945),
+                "expected": FlexibleDate(likely_day=None, likely_month=5, likely_year=1945, modifier=None),
                 "description": "year-month EDTF"
             },
             {
                 "input": "1910/1920",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910, modifier=None),
                 "description": "year range"
             },
             {
                 "input": "+1945",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945, modifier=None),
                 "description": "year only with plus prefix"
             },
             {
                 "input": "A+1850",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1850),
-                "description": "year only with plus prefix and text"
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1850, modifier=FlexibleDate.DateModifier.ABOUT),
+                "description": "year only with plus and about prefixes"
+            },
+            {
+                "input": "+1933/P74Y",
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1933, modifier=None),
+                "description": "year only with plus prefix and duration"
             },
             {
                 "input": '+1953-01/+1953-12',
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1953),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1953, modifier=None),
                 "description": "full year as month range"
-            }
+            },
+            {
+                "input": "R/+2000/P12Y",
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=2000, modifier=None),
+                "description": "year only with recurring and duration information"
+            },
         ]
         
         @pytest.mark.parametrize("test_case", partial_edtf_cases, ids=lambda x: x['description'])

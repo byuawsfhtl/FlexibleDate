@@ -1,20 +1,30 @@
 from statistics import median
 from pydantic import BaseModel, field_validator
-from typing import Optional, Literal
+from typing import Optional, Literal, ClassVar
 from unidecode import unidecode
 from dateutil.parser import parse, ParserError
 from datetime import datetime
 from collections import Counter
 from edtf import parse_edtf
+from enum import Enum
 import re
 import math
 
 class FlexibleDate(BaseModel):
     """Represents a date.
     """
+
+    class DateModifier(str, Enum):
+        ABOUT = "about"
+        BEFORE = "before"
+        AFTER = "after"
+
+    ABOUT_ALIASES: ClassVar[list[str]] = ["about", "abt", "circa", "cir", "ca.", "ca ", "c.", "late", "early", "approx", "approximately", "est", "estimated", "cal", "calc", "calculated", "say", "around", "sometime"]
+
     likely_year: Optional[int] = None
     likely_month: Optional[int] = None
     likely_day: Optional[int] = None
+    modifier: DateModifier | None = None
 
     @field_validator('likely_year')
     def validate_likely_year(cls, v:int) -> int: 
@@ -277,23 +287,47 @@ class FlexibleDate(BaseModel):
         """Creates a FlexibleDate object from a formal date string.
         
         Args:
-            formal_date (str): an EDTF (Extended Date/Time Format) string.
+            formal_date (str): a GEDCOMX date format string such as:
+            - "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
+            - "+1910/+1910" (year range)
+            - "/+1887-03" (open-ended before date range)
+            - "+1976-07-11/" (open-ended after date range)
+            - "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
+            - "A+2014-08" (approximate date)
         
         Raises:
-            ValueError: raised if input is not a valid EDTF string
+            ValueError: raised if input is not valid GEDCOMX date format and cannot be converted to a valid EDTF (Extended Date/Time Format) string
             
         Returns:
-            FlexibleDate: the FlexibleDate object parsed from the EDTF string
+            FlexibleDate: the FlexibleDate object parsed from the GEDCOMX date format string
         """
         if not isinstance(formal_date, str):
             raise ValueError('formal_date must be a string') # should never happen
         
         try:
-            # Clean the input - remove '+' signs which aren't standard EDTF
-            cleaned_date = formal_date.replace('A+', '')
+            modifier = None
+            if ('A' in formal_date):
+                modifier = FlexibleDate.DateModifier.ABOUT
+            cleaned_date = formal_date.replace('A', '')
+            # Remove '+' signs which aren't standard EDTF
             cleaned_date = cleaned_date.replace('+', '')
             # Remove time and timezone info (e.g., T00:00:00Z) to keep only the date
-            cleaned_date = re.sub(r'T\d{2}:\d{2}:\d{2}Z', '', cleaned_date)
+            cleaned_date = re.sub(r'T\d{2}:\d{2}:\d{2}Z?', '', cleaned_date)  
+            # Remove repetition info (e.g. R; /R10; R10/)
+            cleaned_date = re.sub(r'/?R\d*/?', '', cleaned_date)
+            # Remove duration info (e.g. P; /P12Y; P/)
+            cleaned_date = re.sub(r'/?P\w*/?', '', cleaned_date)
+
+            # Check if includes syntax for after or before (e.g. 1900/; /1900; 1900/2000)
+            has_after = re.search(r'\d+/', cleaned_date) is not None
+            has_before = re.search(r'/-?\d+', cleaned_date) is not None
+            if (has_after and not has_before):
+                modifier = FlexibleDate.DateModifier.AFTER
+            if (has_before and not has_after):
+                modifier = FlexibleDate.DateModifier.BEFORE
+            # Remove leading and trailing '/'
+            cleaned_date = re.sub(r'^/', '', cleaned_date)
+            cleaned_date = re.sub(r'/$', '', cleaned_date)
             
             edtf_obj = parse_edtf(cleaned_date)
             
@@ -318,7 +352,7 @@ class FlexibleDate(BaseModel):
                 elif is_month_range:
                     likely_day = None
             
-            return FlexibleDate(likely_year=likely_year, likely_month=likely_month, likely_day=likely_day)
+            return FlexibleDate(likely_year=likely_year, likely_month=likely_month, likely_day=likely_day, modifier=modifier)
             
         except Exception as e:
             raise ValueError(f'Unable to parse EDTF string "{formal_date}": {str(e)}')
