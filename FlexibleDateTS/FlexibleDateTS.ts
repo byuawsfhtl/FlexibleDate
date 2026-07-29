@@ -100,9 +100,12 @@ export default class FlexibleDate {
         const hasDay = this.likelyDay !== undefined && !isNaN(this.likelyDay as number) && this.likelyDay !== null;
         const hasMonth = this.likelyMonth !== undefined && !isNaN(this.likelyMonth as number) && this.likelyMonth !== null;
         const hasYear = this.likelyYear !== undefined && !isNaN(this.likelyYear as number) && this.likelyYear !== null;
+        const hasModifier = this.modifier !== undefined && this.modifier !== null;
 
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return (hasDay ? this.likelyDay : "") +
+        return (hasModifier ? this.modifier?.valueOf() : "") +
+        (hasModifier && (hasDay || hasMonth || hasYear) ? " " : "") +
+        (hasDay ? this.likelyDay : "") +
         (hasDay && hasMonth ? " " : "") +
         (hasMonth ? months[this.likelyMonth! - 1] : "") +
         ((hasDay || hasMonth) && hasYear ? " " : "") +
@@ -123,6 +126,7 @@ export default class FlexibleDate {
                 yearConversion = `-${yearConversion}`;
             }
         }
+        // Add A to front if about, / to front if before, / to back if after
         if (this.likelyDay && this.likelyMonth) {
             return `${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}-${this.likelyDay < 10 ? '0' : ''}${this.likelyDay}`;
         }
@@ -144,7 +148,7 @@ export default class FlexibleDate {
         if (!obj || !(obj instanceof FlexibleDate)) {
             return false;
         }
-        return this.likelyDay === obj.likelyDay && this.likelyMonth === obj.likelyMonth && this.likelyYear === obj.likelyYear;
+        return this.likelyDay === obj.likelyDay && this.likelyMonth === obj.likelyMonth && this.likelyYear === obj.likelyYear && this.modifier === obj.modifier;
     }
 
     public static createFlexibleDate(likelyDate : string | null | undefined){
@@ -184,14 +188,14 @@ export default class FlexibleDate {
 
     /**Creates a FlexibleDate object from a formal date string.
     *
-    * @param formalDate (str): a GEDCOMX date format string such as:
+    * @param formalDate (str): an EDTF (Extended Date/Time Format) string such as:
             - "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
             - "+1910/+1910" (year range)
             - "/+1887-03" (open-ended before date range)
             - "+1976-07-11/" (open-ended after date range)
             - "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
             - "A+2014-08" (approximate date)
-    * @throws ValueError: raised if input is not valid GEDCOMX date format and cannot be converted to a valid EDTF (Extended Date/Time Format) string      
+    * @throws ValueError: raised if input is not a valid EDTF (Extended Date/Time Format) string      
     * @returns FlexibleDate: the FlexibleDate object parsed from the GEDCOMX date format string
     */
     public static createFlexibleDateFromFormalDate(formalDate: string): FlexibleDate {

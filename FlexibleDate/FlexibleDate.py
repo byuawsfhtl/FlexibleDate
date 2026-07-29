@@ -96,7 +96,9 @@ class FlexibleDate(BaseModel):
             str: the string
         """        
         months = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-        return ((str(self.likely_day) if self.likely_day else "") + 
+        return ((self.modifier.value if self.modifier else "") +
+            (" " if self.modifier and (self.likely_day or self.likely_month or self.likely_year) else "") +
+            (str(self.likely_day) if self.likely_day else "") + 
             (" " if self.likely_day and self.likely_month else "") +
             (str(months[self.likely_month]) if self.likely_month else "") +
             (" " if (self.likely_day or self.likely_month) and self.likely_year else "") +
@@ -139,7 +141,7 @@ class FlexibleDate(BaseModel):
         """
         if not isinstance(obj, FlexibleDate):
             return False
-        return self.likely_year == obj.likely_year and self.likely_month == obj.likely_month and self.likely_day == obj.likely_day
+        return self.likely_year == obj.likely_year and self.likely_month == obj.likely_month and self.likely_day == obj.likely_day and self.modifier == obj.modifier
     
     def compare_dates(self, date_to_compare: 'FlexibleDate') -> float | int:
         """Compares two flexible dates and gives the comparison a score.
