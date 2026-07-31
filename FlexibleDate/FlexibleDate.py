@@ -19,8 +19,6 @@ class FlexibleDate(BaseModel):
         BEFORE = "before"
         AFTER = "after"
 
-    ABOUT_ALIASES: ClassVar[list[str]] = ["about", "abt", "circa", "cir", "ca.", "ca ", "c.", "late", "early", "approx", "approximately", "est", "estimated", "cal", "calc", "calculated", "say", "around", "sometime"]
-
     likely_year: Optional[int] = None
     likely_month: Optional[int] = None
     likely_day: Optional[int] = None
@@ -122,13 +120,21 @@ class FlexibleDate(BaseModel):
             elif self.likely_year < 0:
                 year_conversion = f'-{year_conversion}'
 
-        
+        before_modifier = ""
+        after_modifier = ""
+        if self.modifier == self.DateModifier.ABOUT:
+            before_modifier = "A"
+        elif self.modifier == self.DateModifier.BEFORE:
+            before_modifier = "/"
+        elif self.modifier == self.DateModifier.AFTER:
+            after_modifier = "/"
+
         if self.likely_day and self.likely_month:
-            return f'{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}-{"0" if self.likely_day < 10 else ""}{self.likely_day}'
+            return f'{before_modifier}{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}-{"0" if self.likely_day < 10 else ""}{self.likely_day}{after_modifier}'
         elif self.likely_month:
-            return f'{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}'
+            return f'{before_modifier}{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}{after_modifier}'
         else:
-            return f'{year_conversion}'
+            return f'{before_modifier}{year_conversion}{after_modifier}'
 
     def __eq__(self, obj:object) -> bool:
         """Overrides the __eq__ method to compare two FlexibleDate objects.
@@ -375,7 +381,7 @@ class FlexibleDate(BaseModel):
         """    
         # validate input
         if likely_date is None or likely_date.strip() == "":
-            return FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
+            return FlexibleDate(likely_day=None, likely_month=None, likely_year=None, modifier=None)
 
         try:
             FlexibleDate.create_flexible_date_from_formal_date(likely_date)
@@ -386,7 +392,11 @@ class FlexibleDate(BaseModel):
         likely_day = None
         likely_month = None
         likely_year = None
-        # Overwrite defaults if data is found
+
+        # Get modifier from text
+        modifier = _get_modifier(likely_date)
+
+        # Overwrite default dates if data is found
         parsed_date, num_fields = _get_cleaned_date_and_num_fields(likely_date)
         if num_fields >= 1:
             if parsed_date.year != 9999:
@@ -397,10 +407,33 @@ class FlexibleDate(BaseModel):
             likely_day = parsed_date.day
         # Initializing and return the fd
         try:
-            fd = FlexibleDate(likely_day=likely_day, likely_month=likely_month, likely_year=likely_year)
+            fd = FlexibleDate(likely_day=likely_day, likely_month=likely_month, likely_year=likely_year, modifier=modifier)
         except:
-            fd = FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
+            fd = FlexibleDate(likely_day=None, likely_month=None, likely_year=None, modifier=None)
         return fd
+
+def _get_modifier(date: str) -> FlexibleDate.DateModifier | None:
+    normalized_date = date.strip().lower()
+
+    ABOUT_ALIASES = {"about", "abt", "circa", "cir ", "cir.", "ca.", "ca ", "c.", 
+                     "late", "early", "approx ", "approx. ", "approximately",
+                     "estimated", "cal ", "cal.", "calc ", "calc.",
+                     "calculated", "say", "around", "sometime in"}
+    BEFORE_ALIASES = {"before", "bef ", "bef.", "prior", "pre ", "earlier", 
+                      "no later than", "not later than", "ante ", "previous to", 
+                      "by", "sometime before"}
+    AFTER_ALIASES = {"after", "aft ", "aft.", "following", "later than", 
+                     "subsequent to", "since", "post", "not before", "sometime after"}
+
+    modifier = None
+    if any(normalized_date.startswith(alias) for alias in ABOUT_ALIASES):
+        modifier = FlexibleDate.DateModifier.ABOUT
+    if any(normalized_date.startswith(alias) for alias in BEFORE_ALIASES):
+        modifier = FlexibleDate.DateModifier.BEFORE
+    if any(normalized_date.startswith(alias) for alias in AFTER_ALIASES):
+        modifier = FlexibleDate.DateModifier.AFTER
+
+    return modifier
 
 def _choose_most_resonable_value(values: list[Optional[int]]) -> int | None:
     """Chooses the best value. Can compromise for a middle value.

@@ -126,15 +126,27 @@ export default class FlexibleDate {
                 yearConversion = `-${yearConversion}`;
             }
         }
-        // Add A to front if about, / to front if before, / to back if after
+
+        let beforeModifier = "";
+        let afterModifier = "";
+        if (this.modifier == DateModifier.ABOUT) {
+            beforeModifier = "A";
+        } 
+        else if (this.modifier == DateModifier.BEFORE) {
+            beforeModifier = "/";
+        } 
+        else if (this.modifier == DateModifier.AFTER) {
+            afterModifier = "/";
+        }
+
         if (this.likelyDay && this.likelyMonth) {
-            return `${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}-${this.likelyDay < 10 ? '0' : ''}${this.likelyDay}`;
+            return `${beforeModifier}${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}-${this.likelyDay < 10 ? '0' : ''}${this.likelyDay}${afterModifier}`;
         }
         else if (this.likelyMonth) {
-            return `${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}`;
+            return `${beforeModifier}${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}${afterModifier}`;
         }
         else {
-            return `${yearConversion}`;
+            return `${beforeModifier}${yearConversion}${afterModifier}`;
         }
     }
 
@@ -153,7 +165,7 @@ export default class FlexibleDate {
 
     public static createFlexibleDate(likelyDate : string | null | undefined){
         if( likelyDate == null || likelyDate == undefined || likelyDate.trim() == ""){
-            return new FlexibleDate(null, null, null);
+            return new FlexibleDate(null, null, null, null);
         }
         else if(typeof likelyDate != "string"){
             throw new Error("likelyDate must be a string or null");
@@ -162,6 +174,8 @@ export default class FlexibleDate {
         let likelyDay: number | null = null;
         let likelyMonth: number | null = null;
         let likelyYear: number | null = null;
+
+        const modifier = FlexibleDate.getModifier(likelyDate);
 
         const  [parsedDate, numFields]  = FlexibleDate.getCleanedDateAndNumFields(likelyDate);
 
@@ -183,7 +197,7 @@ export default class FlexibleDate {
             }
         }
     
-        return new FlexibleDate(likelyDay, likelyMonth, likelyYear);
+        return new FlexibleDate(likelyDay, likelyMonth, likelyYear, modifier);
     }
 
     /**Creates a FlexibleDate object from a formal date string.
@@ -397,6 +411,39 @@ export default class FlexibleDate {
         const bestDay = FlexibleDate._chooseBestValue("likelyDay", remainingDates);
 
         return new FlexibleDate(bestDay, bestMonth, bestYear);
+    }
+
+    private static getModifier(date: string): DateModifier | null {
+        const normalizedDate = date.trim().toLowerCase();
+
+        const ABOUT_ALIASES = [
+            "about", "abt", "circa", "cir ", "cir.", "ca.", "ca ", "c.",
+            "late", "early", "approx ", "approx. ", "approximately", 
+            "estimated", "cal ", "cal.", "calc ",
+            "calc.", "calculated", "say", "around", "sometime in"
+        ];
+        const BEFORE_ALIASES = [
+            "before", "bef ", "bef.", "prior", "pre ", "earlier",
+            "no later than", "not later than", "ante ", "previous to", 
+            "by", "sometime before"
+        ];
+        const AFTER_ALIASES = [
+            "after", "aft ", "aft.", "following", "later than",
+            "subsequent to", "since", "post", "not before", "sometime after"
+        ];
+
+        let modifier: DateModifier | null = null;
+        if (ABOUT_ALIASES.some(alias => normalizedDate.startsWith(alias))) {
+            modifier = DateModifier.ABOUT;
+        }
+        if (BEFORE_ALIASES.some(alias => normalizedDate.startsWith(alias))) {
+            modifier = DateModifier.BEFORE;
+        }
+        if (AFTER_ALIASES.some(alias => normalizedDate.startsWith(alias))) {
+            modifier = DateModifier.AFTER;
+        }
+
+        return modifier;
     }
 
     private static _chooseBestValue(valueType: "likelyYear" | "likelyMonth" | "likelyDay", dates: FlexibleDate[]): number | null {

@@ -20,47 +20,47 @@ class TestEdgeCases:
         ancient_date_cases = [
             {
                 "input": "-500",
-                "expected": {"likelyYear": -500, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": -500, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "BC year with minus sign"
             },
             {
                 "input": "500 BC",
-                "expected": {"likelyYear": -500, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": -500, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "BC year with BC suffix"
             },
             {
                 "input": "0050",
-                "expected": {"likelyYear": 50, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 50, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "year 50 AD with leading zeros"
             },
             {
                 "input": "0005",
-                "expected": {"likelyYear": 5, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 5, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "year 5 AD with leading zeros"
             },
             {
                 "input": "99",
-                "expected": {"likelyYear": 99, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 99, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "year 99 AD"
             },
             {
                 "input": "5",
-                "expected": {"likelyYear": 5, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 5, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "single digit year"
             },
             {
                 "input": "-1000",
-                "expected": {"likelyYear": -1000, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": -1000, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "year 1000 BC"
             },
             {
                 "input": "50",
-                "expected": {"likelyYear": 50, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 50, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "year 50 AD (AncientDateTime path)"
             },
             {
                 "input": "-50",
-                "expected": {"likelyYear": -50, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": -50, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "year 50 BC (AncientDateTime path)"
             }
         ]
@@ -85,62 +85,62 @@ class TestEdgeCases:
         text_cleaning_cases = [
             {
                 "input": "2020/05/15",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with slashes"
             },
             {
                 "input": "2020.05.15",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with dots"
             },
             {
                 "input": "2020_05_15",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with underscores"
             },
             {
                 "input": "2020-05-15 14:30:00",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with time HH:MM:SS"
             },
             {
                 "input": "2020-05-15 14:30",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with time HH:MM"
             },
             {
                 "input": "May 15th, 2020",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with ordinal suffix"
             },
             {
                 "input": "15May2020",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date without spaces"
             },
             {
                 "input": "  2020-05-15  ",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with leading/trailing whitespace"
             },
             {
                 "input": "9",
-                "expected": {"likelyYear": 9, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 9, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "single digit year (zero-padding)"
             },
             {
                 "input": "85",
-                "expected": {"likelyYear": 85, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 85, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "two digit year (zero-padding)"
             },
             {
                 "input": "099",
-                "expected": {"likelyYear": 99, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 99, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "three digit year with leading zero (zero-padding)"
             },
             {
                 "input": "1000 bc",
-                "expected": {"likelyYear": -1000, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": -1000, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "year with BC suffix conversion"
             }
         ]
@@ -165,22 +165,22 @@ class TestEdgeCases:
         decade_cases = [
             {
                 "input": "1850s",
-                "expected": {"likelyYear": 1850, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 1850, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "decade format (1850s)"
             },
             {
                 "input": "circa 1920s",
-                "expected": {"likelyYear": 1920, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 1920, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
                 "description": "circa with decade"
             },
             {
                 "input": "early 1990s",
-                "expected": {"likelyYear": 1990, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 1990, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
                 "description": "early with decade"
             },
             {
                 "input": "late 2000s",
-                "expected": {"likelyYear": 2000, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 2000, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
                 "description": "late with decade"
             }
         ]
@@ -205,17 +205,17 @@ class TestEdgeCases:
         ampm_cases = [
             {
                 "input": "May 15, 2020 3:00 PM",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with PM time"
             },
             {
                 "input": "May 15, 2020 9:00 AM",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with AM time"
             },
             {
                 "input": "2020-05-15 11:30 pm",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with lowercase pm"
             }
         ]
@@ -240,17 +240,17 @@ class TestEdgeCases:
         special_char_cases = [
             {
                 "input": '"May 15, 2020"',
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date in double quotes"
             },
             {
                 "input": "'May 15, 2020'",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date in single quotes"
             },
             {
                 "input": "May, 15, 2020",
-                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15},
+                "expected": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": None},
                 "description": "date with extra commas"
             }
         ]
@@ -275,12 +275,12 @@ class TestEdgeCases:
         parser_edge_cases = [
             {
                 "input": "0050",
-                "expected": {"likelyYear": 50, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": 50, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "year 0050 triggers parser exception, falls back to gleaning"
             },
             {
                 "input": "50 bc",
-                "expected": {"likelyYear": -50, "likelyMonth": None, "likelyDay": None},
+                "expected": {"likelyYear": -50, "likelyMonth": None, "likelyDay": None, "modifier": None},
                 "description": "BC in input triggers parser exception, falls back to gleaning"
             }
         ]
@@ -305,7 +305,7 @@ class TestEdgeCases:
         complex_gleaning_cases = [
             {
                 "input": "12 13 2020",
-                "expected": {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": 13},
+                "expected": {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": 13, "modifier": None},
                 "description": "ambiguous day/month numbers (exercises substitution logic)"
             }
         ]
