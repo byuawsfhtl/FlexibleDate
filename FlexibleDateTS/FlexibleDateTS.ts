@@ -41,6 +41,7 @@ export default class FlexibleDate {
     modifier?: DateModifier | null = null;
 
     static readonly ABOUT_ALIASES = ["about", "abt", "circa", "cir", "ca.", "ca ", "c.", "late", "early", "approx", "approximately", "est", "estimated", "cal", "calc", "calculated", "say", "around", "sometime"] as const;
+    static readonly ABOUT_SCORE_MODIFIER = 1.2;
 
     constructor(likelyDate: string | null);
     constructor(likelyDay: number | null, likelyMonth: number | null, likelyYear: number | null, modifier?: DateModifier | null);
@@ -331,7 +332,6 @@ export default class FlexibleDate {
         let score: number = 100;
 
         if (this.valueOf() && dateToCompare.valueOf()) {
-            const ABOUT_SCORE_MODIFIER = 1.2;
             const thisDateValues: (number | null | undefined)[] = [this.likelyYear, this.likelyMonth, this.likelyDay];
             const dateToCompareValues: (number | null | undefined)[] = [dateToCompare.likelyYear, dateToCompare.likelyMonth, dateToCompare.likelyDay];
             const sharedNonNullCount: number = thisDateValues.reduce((count: number, val, index) => 
@@ -364,7 +364,7 @@ export default class FlexibleDate {
             score = (allScores.reduce((sum, score) => sum + score, 0)) * 100;
             
             if (this.modifier === DateModifier.ABOUT || dateToCompare.modifier === DateModifier.ABOUT) {
-                const modifiedScore = score * ABOUT_SCORE_MODIFIER;
+                const modifiedScore = score * FlexibleDate.ABOUT_SCORE_MODIFIER;
                 score = modifiedScore > 100 ? 100 : modifiedScore;
             }
         }

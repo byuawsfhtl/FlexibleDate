@@ -24,6 +24,8 @@ class FlexibleDate(BaseModel):
     likely_day: Optional[int] = None
     modifier: DateModifier | None = None
 
+    ABOUT_SCORE_MODIFIER: ClassVar = 1.2
+
     @field_validator('likely_year')
     def validate_likely_year(cls, v:int) -> int: 
         """Validates the likely_year parameter before object initialization.
@@ -159,7 +161,6 @@ class FlexibleDate(BaseModel):
             float | int: the score
         """    
         score = 100
-        ABOUT_SCORE_MODIFIER = 1.2
 
         both_years = self.likely_year and date_to_compare.likely_year
         both_months = self.likely_month and date_to_compare.likely_month
@@ -196,7 +197,7 @@ class FlexibleDate(BaseModel):
             score = sum(scores) * 100
             
             if self.modifier == FlexibleDate.DateModifier.ABOUT or date_to_compare.modifier == FlexibleDate.DateModifier.ABOUT:
-                modified_score = score * ABOUT_SCORE_MODIFIER
+                modified_score = score * FlexibleDate.ABOUT_SCORE_MODIFIER
                 score = 100 if modified_score > 100 else modified_score
 
         # Return int if whole number, float otherwise
