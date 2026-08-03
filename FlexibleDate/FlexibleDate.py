@@ -302,7 +302,7 @@ class FlexibleDate(BaseModel):
         """Creates a FlexibleDate object from a formal date string.
         
         Args:
-            formal_date (str): a GEDCOMX date format string such as:
+            formal_date (str): an EDTF (Extended Date/Time Format) string such as:
             - "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
             - "+1910/+1910" (year range)
             - "/+1887-03" (open-ended before date range)
@@ -311,10 +311,10 @@ class FlexibleDate(BaseModel):
             - "A+2014-08" (approximate date)
         
         Raises:
-            ValueError: raised if input is not valid GEDCOMX date format and cannot be converted to a valid EDTF (Extended Date/Time Format) string
+            ValueError: raised if input is not a valid EDTF (Extended Date/Time Format) string  
             
         Returns:
-            FlexibleDate: the FlexibleDate object parsed from the GEDCOMX date format string
+            FlexibleDate: the FlexibleDate object parsed from the EDTF date format string
         """
         if not isinstance(formal_date, str):
             raise ValueError('formal_date must be a string') # should never happen

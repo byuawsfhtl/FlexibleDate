@@ -211,7 +211,7 @@ export default class FlexibleDate {
             - "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
             - "A+2014-08" (approximate date)
     * @throws ValueError: raised if input is not a valid EDTF (Extended Date/Time Format) string      
-    * @returns FlexibleDate: the FlexibleDate object parsed from the GEDCOMX date format string
+    * @returns FlexibleDate: the FlexibleDate object parsed from the EDTF date format string
     */
     public static createFlexibleDateFromFormalDate(formalDate: string): FlexibleDate {
 
