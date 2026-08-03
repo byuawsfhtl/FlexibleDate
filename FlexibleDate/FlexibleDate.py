@@ -303,14 +303,7 @@ class FlexibleDate(BaseModel):
         """Creates a FlexibleDate object from a formal date string.
         
         Args:
-            formal_date (str): an EDTF (Extended Date/Time Format) string such as:
-
-                - "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
-                - "+1910/+1910" (year range)
-                - "/+1887-03" (open-ended before date range)
-                - "+1976-07-11/" (open-ended after date range)
-                - "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
-                - "A+2014-08" (approximate date)
+            formal_date (str): an EDTF (Extended Date/Time Format) string
         
         Raises:
             ValueError: raised if input is not a valid EDTF (Extended Date/Time Format) string  
