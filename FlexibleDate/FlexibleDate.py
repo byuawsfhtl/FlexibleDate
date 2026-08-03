@@ -349,9 +349,11 @@ class FlexibleDate(BaseModel):
             lower_date = edtf_obj.lower_strict()
             upper_date = edtf_obj.upper_strict() if '/' in cleaned_date else None
 
+            cleaned_parts = [x for x in cleaned_date.split('-') if x != '']
+
             likely_year = lower_date.tm_year if lower_date.tm_year != 9999 else None
-            likely_month = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_date.split('-')) > 1 else None
-            likely_day = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_date.split('-')) > 2 else None
+            likely_month = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_parts) > 1 else None
+            likely_day = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_parts) > 2 else None
 
             if upper_date is not None:
                 [start_part, end_part] = cleaned_date.split('/')
@@ -391,7 +393,7 @@ class FlexibleDate(BaseModel):
             return FlexibleDate(likely_day=None, likely_month=None, likely_year=None, modifier=None)
 
         try:
-            FlexibleDate.create_flexible_date_from_formal_date(likely_date)
+            return FlexibleDate.create_flexible_date_from_formal_date(likely_date)
         except ValueError:
             pass
         

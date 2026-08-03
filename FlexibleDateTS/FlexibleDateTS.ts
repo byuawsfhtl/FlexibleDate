@@ -40,7 +40,6 @@ export default class FlexibleDate {
     likelyDay?: number | null = null;
     modifier?: DateModifier | null = null;
 
-    static readonly ABOUT_ALIASES = ["about", "abt", "circa", "cir", "ca.", "ca ", "c.", "late", "early", "approx", "approximately", "est", "estimated", "cal", "calc", "calculated", "say", "around", "sometime"] as const;
     static readonly ABOUT_SCORE_MODIFIER = 1.2;
 
     constructor(likelyDate: string | null);
@@ -171,6 +170,10 @@ export default class FlexibleDate {
         else if(typeof likelyDate != "string"){
             throw new Error("likelyDate must be a string or null");
         }
+
+        try {
+            return FlexibleDate.createFlexibleDateFromFormalDate(likelyDate);
+        } catch (error) {}
 
         let likelyDay: number | null = null;
         let likelyMonth: number | null = null;
