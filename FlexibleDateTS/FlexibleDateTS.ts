@@ -27,24 +27,36 @@ class AncientDateTime {
     }
 }
 
+export enum DateModifier {
+    ABOUT = "about",
+    BEFORE = "before", 
+    AFTER = "after"
+}
+
+
 export default class FlexibleDate {
-    likelyYear?: number | null;
-    likelyMonth?: number | null;
-    likelyDay?: number | null;
+    likelyYear?: number | null = null;
+    likelyMonth?: number | null = null;
+    likelyDay?: number | null = null;
+    modifier?: DateModifier | null = null;
+
+    static readonly ABOUT_SCORE_MODIFIER = 1.2;
 
     constructor(likelyDate: string | null);
-    constructor(likelyDay: number | null, likelyMonth: number | null, likelyYear: number | null);
-    constructor(arg1: string | number | null, arg2?: number | null, arg3?: number | null) {
+    constructor(likelyDay: number | null, likelyMonth: number | null, likelyYear: number | null, modifier?: DateModifier | null);
+    constructor(arg1: string | number | null, arg2?: number | null, arg3?: number | null, arg4?: DateModifier | null) {
       if (typeof arg1 === "string") {
         const date = FlexibleDate.createFlexibleDate(arg1);
         this.likelyDay = date.likelyDay;
         this.likelyMonth = date.likelyMonth;
-        this.likelyYear = date. likelyYear;
+        this.likelyYear = date.likelyYear;
+        this.modifier = date.modifier;
       } 
       else {
         this.likelyDay = arg1 ?? null;
         this.likelyMonth = arg2 ?? null;
         this.likelyYear = arg3 ?? null;
+        this.modifier = arg4 ?? null
       }
 
       this.validateFields();
@@ -88,9 +100,12 @@ export default class FlexibleDate {
         const hasDay = this.likelyDay !== undefined && !isNaN(this.likelyDay as number) && this.likelyDay !== null;
         const hasMonth = this.likelyMonth !== undefined && !isNaN(this.likelyMonth as number) && this.likelyMonth !== null;
         const hasYear = this.likelyYear !== undefined && !isNaN(this.likelyYear as number) && this.likelyYear !== null;
+        const hasModifier = this.modifier !== undefined && this.modifier !== null;
 
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return (hasDay ? this.likelyDay : "") +
+        return (hasModifier ? this.modifier?.valueOf() : "") +
+        (hasModifier && (hasDay || hasMonth || hasYear) ? " " : "") +
+        (hasDay ? this.likelyDay : "") +
         (hasDay && hasMonth ? " " : "") +
         (hasMonth ? months[this.likelyMonth! - 1] : "") +
         ((hasDay || hasMonth) && hasYear ? " " : "") +
@@ -111,14 +126,27 @@ export default class FlexibleDate {
                 yearConversion = `-${yearConversion}`;
             }
         }
+
+        let beforeModifier = "";
+        let afterModifier = "";
+        if (this.modifier == DateModifier.ABOUT) {
+            beforeModifier = "A";
+        } 
+        else if (this.modifier == DateModifier.BEFORE) {
+            beforeModifier = "/";
+        } 
+        else if (this.modifier == DateModifier.AFTER) {
+            afterModifier = "/";
+        }
+
         if (this.likelyDay && this.likelyMonth) {
-            return `${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}-${this.likelyDay < 10 ? '0' : ''}${this.likelyDay}`;
+            return `${beforeModifier}${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}-${this.likelyDay < 10 ? '0' : ''}${this.likelyDay}${afterModifier}`;
         }
         else if (this.likelyMonth) {
-            return `${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}`;
+            return `${beforeModifier}${yearConversion}-${this.likelyMonth < 10 ? '0' : ''}${this.likelyMonth}${afterModifier}`;
         }
         else {
-            return `${yearConversion}`;
+            return `${beforeModifier}${yearConversion}${afterModifier}`;
         }
     }
 
@@ -132,20 +160,26 @@ export default class FlexibleDate {
         if (!obj || !(obj instanceof FlexibleDate)) {
             return false;
         }
-        return this.likelyDay === obj.likelyDay && this.likelyMonth === obj.likelyMonth && this.likelyYear === obj.likelyYear;
+        return this.likelyDay === obj.likelyDay && this.likelyMonth === obj.likelyMonth && this.likelyYear === obj.likelyYear && this.modifier === obj.modifier;
     }
 
     public static createFlexibleDate(likelyDate : string | null | undefined){
         if( likelyDate == null || likelyDate == undefined || likelyDate.trim() == ""){
-            return new FlexibleDate(null, null, null);
+            return new FlexibleDate(null, null, null, null);
         }
         else if(typeof likelyDate != "string"){
             throw new Error("likelyDate must be a string or null");
         }
 
+        try {
+            return FlexibleDate.createFlexibleDateFromFormalDate(likelyDate);
+        } catch (error) {}
+
         let likelyDay: number | null = null;
         let likelyMonth: number | null = null;
         let likelyYear: number | null = null;
+
+        const modifier = FlexibleDate.getModifier(likelyDate);
 
         const  [parsedDate, numFields]  = FlexibleDate.getCleanedDateAndNumFields(likelyDate);
 
@@ -167,17 +201,20 @@ export default class FlexibleDate {
             }
         }
     
-        return new FlexibleDate(likelyDay, likelyMonth, likelyYear);
+        return new FlexibleDate(likelyDay, likelyMonth, likelyYear, modifier);
     }
 
     /**Creates a FlexibleDate object from a formal date string.
     *
     * @param formalDate (str): an EDTF (Extended Date/Time Format) string such as:
-            "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
-            "+1910/+1910" (year range)
-            "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)    
-    * @throws ValueError: raised if input is not a valid EDTF string        
-    * @returns FlexibleDate: the FlexibleDate object parsed from the EDTF string
+            - "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
+            - "+1910/+1910" (year range)
+            - "/+1887-03" (open-ended before date range)
+            - "+1976-07-11/" (open-ended after date range)
+            - "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
+            - "A+2014-08" (approximate date)
+    * @throws ValueError: raised if input is not a valid EDTF (Extended Date/Time Format) string      
+    * @returns FlexibleDate: the FlexibleDate object parsed from the EDTF date format string
     */
     public static createFlexibleDateFromFormalDate(formalDate: string): FlexibleDate {
 
@@ -186,9 +223,32 @@ export default class FlexibleDate {
         }
         
         try {
-            // Clean the input - remove '+' signs which aren't standard EDTF
-            let cleanedDate = formalDate.replace(/A\+/, '')
-            cleanedDate = cleanedDate.replace(/\+/g, '')
+            let modifier = null;
+            if (formalDate.includes('A')) {
+                modifier = DateModifier.ABOUT;
+            }
+            let cleanedDate = formalDate.replace(/A/g, '');
+            // Remove '+' signs which aren't standard EDTF
+            cleanedDate = cleanedDate.replace(/\+/g, '');
+            // Remove time and timezone info (e.g., T00:00:00Z) to keep only the date
+            cleanedDate = cleanedDate.replace(/T\d{2}:\d{2}:\d{2}Z?/g, '');
+            // Remove repetition info (e.g. R; /R10; R10/)
+            cleanedDate = cleanedDate.replace(/\/?R\d*\/?/g, '');
+            // Remove duration info (e.g. P; /P12Y; P/)
+            cleanedDate = cleanedDate.replace(/\/?P\w*\/?/g, '');
+
+            // Check if includes syntax for after or before (e.g. 1900/; /1900; 1900/2000)
+            const hasAfter = /\d+\//.test(cleanedDate);
+            const hasBefore = /\/-?\d+/.test(cleanedDate);
+            if (hasAfter && !hasBefore) {
+                modifier = DateModifier.AFTER;
+            }
+            if (hasBefore && !hasAfter) {
+                modifier = DateModifier.BEFORE;
+            }
+            //Remove leading and trailing '/'
+            cleanedDate = cleanedDate.replace(/^\//g, '');
+            cleanedDate = cleanedDate.replace(/\/$/g, '');
             
             let edtfObj = edtf.parse(cleanedDate) as {
                 type: string;
@@ -265,7 +325,7 @@ export default class FlexibleDate {
                 }
             }
 
-            return new FlexibleDate(likelyDay, likelyMonth, likelyYear)
+            return new FlexibleDate(likelyDay, likelyMonth, likelyYear, modifier)
         } catch (error) {
             throw new Error(`Unable to parse EDTF string "${formalDate}": ${error}`)
         }
@@ -305,6 +365,11 @@ export default class FlexibleDate {
             }
             
             score = (allScores.reduce((sum, score) => sum + score, 0)) * 100;
+            
+            if (this.modifier === DateModifier.ABOUT || dateToCompare.modifier === DateModifier.ABOUT) {
+                const modifiedScore = score * FlexibleDate.ABOUT_SCORE_MODIFIER;
+                score = modifiedScore > 100 ? 100 : modifiedScore;
+            }
         }
 
         if (Number.isInteger(score)) {
@@ -355,6 +420,39 @@ export default class FlexibleDate {
         const bestDay = FlexibleDate._chooseBestValue("likelyDay", remainingDates);
 
         return new FlexibleDate(bestDay, bestMonth, bestYear);
+    }
+
+    private static getModifier(date: string): DateModifier | null {
+        const normalizedDate = date.trim().toLowerCase();
+
+        const ABOUT_ALIASES = [
+            "about", "abt", "circa", "cir ", "cir.", "ca.", "ca ", "c.",
+            "late", "early", "approx ", "approx. ", "approximately", 
+            "estimated", "cal ", "cal.", "calc ",
+            "calc.", "calculated", "say", "around", "sometime in"
+        ];
+        const BEFORE_ALIASES = [
+            "before", "bef ", "bef.", "prior", "pre ", "earlier",
+            "no later than", "not later than", "ante ", "previous to", 
+            "by", "sometime before"
+        ];
+        const AFTER_ALIASES = [
+            "after", "aft ", "aft.", "following", "later than",
+            "subsequent to", "since", "post", "not before", "sometime after"
+        ];
+
+        let modifier: DateModifier | null = null;
+        if (ABOUT_ALIASES.some(alias => normalizedDate.startsWith(alias))) {
+            modifier = DateModifier.ABOUT;
+        }
+        if (BEFORE_ALIASES.some(alias => normalizedDate.startsWith(alias))) {
+            modifier = DateModifier.BEFORE;
+        }
+        if (AFTER_ALIASES.some(alias => normalizedDate.startsWith(alias))) {
+            modifier = DateModifier.AFTER;
+        }
+
+        return modifier;
     }
 
     private static _chooseBestValue(valueType: "likelyYear" | "likelyMonth" | "likelyDay", dates: FlexibleDate[]): number | null {

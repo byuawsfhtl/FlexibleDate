@@ -1,20 +1,31 @@
 from statistics import median
 from pydantic import BaseModel, field_validator
-from typing import Optional, Literal
+from typing import Optional, Literal, ClassVar
 from unidecode import unidecode
 from dateutil.parser import parse, ParserError
 from datetime import datetime
 from collections import Counter
 from edtf import parse_edtf
+from enum import Enum
 import re
 import math
 
 class FlexibleDate(BaseModel):
     """Represents a date.
     """
+
+    class DateModifier(str, Enum):
+        """Enum that defines possible modifiers to the date."""
+        ABOUT = "about"
+        BEFORE = "before"
+        AFTER = "after"
+
     likely_year: Optional[int] = None
     likely_month: Optional[int] = None
     likely_day: Optional[int] = None
+    modifier: DateModifier | None = None
+
+    ABOUT_SCORE_MODIFIER: ClassVar = 1.2
 
     @field_validator('likely_year')
     def validate_likely_year(cls, v:int) -> int: 
@@ -86,7 +97,9 @@ class FlexibleDate(BaseModel):
             str: the string
         """        
         months = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-        return ((str(self.likely_day) if self.likely_day else "") + 
+        return ((self.modifier.value if self.modifier else "") +
+            (" " if self.modifier and (self.likely_day or self.likely_month or self.likely_year) else "") +
+            (str(self.likely_day) if self.likely_day else "") + 
             (" " if self.likely_day and self.likely_month else "") +
             (str(months[self.likely_month]) if self.likely_month else "") +
             (" " if (self.likely_day or self.likely_month) and self.likely_year else "") +
@@ -110,13 +123,21 @@ class FlexibleDate(BaseModel):
             elif self.likely_year < 0:
                 year_conversion = f'-{year_conversion}'
 
-        
+        before_modifier = ""
+        after_modifier = ""
+        if self.modifier == self.DateModifier.ABOUT:
+            before_modifier = "A"
+        elif self.modifier == self.DateModifier.BEFORE:
+            before_modifier = "/"
+        elif self.modifier == self.DateModifier.AFTER:
+            after_modifier = "/"
+
         if self.likely_day and self.likely_month:
-            return f'{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}-{"0" if self.likely_day < 10 else ""}{self.likely_day}'
+            return f'{before_modifier}{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}-{"0" if self.likely_day < 10 else ""}{self.likely_day}{after_modifier}'
         elif self.likely_month:
-            return f'{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}'
+            return f'{before_modifier}{year_conversion}-{"0" if self.likely_month < 10 else ""}{self.likely_month}{after_modifier}'
         else:
-            return f'{year_conversion}'
+            return f'{before_modifier}{year_conversion}{after_modifier}'
 
     def __eq__(self, obj:object) -> bool:
         """Overrides the __eq__ method to compare two FlexibleDate objects.
@@ -129,7 +150,7 @@ class FlexibleDate(BaseModel):
         """
         if not isinstance(obj, FlexibleDate):
             return False
-        return self.likely_year == obj.likely_year and self.likely_month == obj.likely_month and self.likely_day == obj.likely_day
+        return self.likely_year == obj.likely_year and self.likely_month == obj.likely_month and self.likely_day == obj.likely_day and self.modifier == obj.modifier
     
     def compare_dates(self, date_to_compare: 'FlexibleDate') -> float | int:
         """Compares two flexible dates and gives the comparison a score.
@@ -173,7 +194,12 @@ class FlexibleDate(BaseModel):
                 if diff >= max_diff:
                     return 0
                 scores.append(max(0, 1 - diff / max_diff) * weight)
+
             score = sum(scores) * 100
+            
+            if self.modifier == FlexibleDate.DateModifier.ABOUT or date_to_compare.modifier == FlexibleDate.DateModifier.ABOUT:
+                modified_score = score * FlexibleDate.ABOUT_SCORE_MODIFIER
+                score = 100 if modified_score > 100 else modified_score
 
         # Return int if whole number, float otherwise
         rounded_score = round(score, 5)
@@ -277,32 +303,52 @@ class FlexibleDate(BaseModel):
         """Creates a FlexibleDate object from a formal date string.
         
         Args:
-            formal_date (str): an EDTF (Extended Date/Time Format) string.
+            formal_date (str): an EDTF (Extended Date/Time Format) string
         
         Raises:
-            ValueError: raised if input is not a valid EDTF string
+            ValueError: raised if input is not a valid EDTF (Extended Date/Time Format) string  
             
         Returns:
-            FlexibleDate: the FlexibleDate object parsed from the EDTF string
+            FlexibleDate: the FlexibleDate object parsed from the EDTF date format string
         """
         if not isinstance(formal_date, str):
             raise ValueError('formal_date must be a string') # should never happen
         
         try:
-            # Clean the input - remove '+' signs which aren't standard EDTF
-            cleaned_date = formal_date.replace('A+', '')
+            modifier = None
+            if ('A' in formal_date):
+                modifier = FlexibleDate.DateModifier.ABOUT
+            cleaned_date = formal_date.replace('A', '')
+            # Remove '+' signs which aren't standard EDTF
             cleaned_date = cleaned_date.replace('+', '')
             # Remove time and timezone info (e.g., T00:00:00Z) to keep only the date
-            cleaned_date = re.sub(r'T\d{2}:\d{2}:\d{2}Z', '', cleaned_date)
+            cleaned_date = re.sub(r'T\d{2}:\d{2}:\d{2}Z?', '', cleaned_date)  
+            # Remove repetition info (e.g. R; /R10; R10/)
+            cleaned_date = re.sub(r'/?R\d*/?', '', cleaned_date)
+            # Remove duration info (e.g. P; /P12Y; P/)
+            cleaned_date = re.sub(r'/?P\w*/?', '', cleaned_date)
+
+            # Check if includes syntax for after or before (e.g. 1900/; /1900; 1900/2000)
+            has_after = re.search(r'\d+/', cleaned_date) is not None
+            has_before = re.search(r'/-?\d+', cleaned_date) is not None
+            if (has_after and not has_before):
+                modifier = FlexibleDate.DateModifier.AFTER
+            if (has_before and not has_after):
+                modifier = FlexibleDate.DateModifier.BEFORE
+            # Remove leading and trailing '/'
+            cleaned_date = re.sub(r'^/', '', cleaned_date)
+            cleaned_date = re.sub(r'/$', '', cleaned_date)
             
             edtf_obj = parse_edtf(cleaned_date)
             
             lower_date = edtf_obj.lower_strict()
             upper_date = edtf_obj.upper_strict() if '/' in cleaned_date else None
 
+            cleaned_parts = [x for x in cleaned_date.split('-') if x != '']
+
             likely_year = lower_date.tm_year if lower_date.tm_year != 9999 else None
-            likely_month = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_date.split('-')) > 1 else None
-            likely_day = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_date.split('-')) > 2 else None
+            likely_month = lower_date.tm_mon if lower_date.tm_mon != 1 or len(cleaned_parts) > 1 else None
+            likely_day = lower_date.tm_mday if lower_date.tm_mday != 1 or len(cleaned_parts) > 2 else None
 
             if upper_date is not None:
                 [start_part, end_part] = cleaned_date.split('/')
@@ -318,7 +364,7 @@ class FlexibleDate(BaseModel):
                 elif is_month_range:
                     likely_day = None
             
-            return FlexibleDate(likely_year=likely_year, likely_month=likely_month, likely_day=likely_day)
+            return FlexibleDate(likely_year=likely_year, likely_month=likely_month, likely_day=likely_day, modifier=modifier)
             
         except Exception as e:
             raise ValueError(f'Unable to parse EDTF string "{formal_date}": {str(e)}')
@@ -339,10 +385,10 @@ class FlexibleDate(BaseModel):
         """    
         # validate input
         if likely_date is None or likely_date.strip() == "":
-            return FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
+            return FlexibleDate(likely_day=None, likely_month=None, likely_year=None, modifier=None)
 
         try:
-            FlexibleDate.create_flexible_date_from_formal_date(likely_date)
+            return FlexibleDate.create_flexible_date_from_formal_date(likely_date)
         except ValueError:
             pass
         
@@ -350,7 +396,11 @@ class FlexibleDate(BaseModel):
         likely_day = None
         likely_month = None
         likely_year = None
-        # Overwrite defaults if data is found
+
+        # Get modifier from text
+        modifier = _get_modifier(likely_date)
+
+        # Overwrite default dates if data is found
         parsed_date, num_fields = _get_cleaned_date_and_num_fields(likely_date)
         if num_fields >= 1:
             if parsed_date.year != 9999:
@@ -361,10 +411,41 @@ class FlexibleDate(BaseModel):
             likely_day = parsed_date.day
         # Initializing and return the fd
         try:
-            fd = FlexibleDate(likely_day=likely_day, likely_month=likely_month, likely_year=likely_year)
+            fd = FlexibleDate(likely_day=likely_day, likely_month=likely_month, likely_year=likely_year, modifier=modifier)
         except:
-            fd = FlexibleDate(likely_day=None, likely_month=None, likely_year=None)
+            fd = FlexibleDate(likely_day=None, likely_month=None, likely_year=None, modifier=None)
         return fd
+
+def _get_modifier(date: str) -> FlexibleDate.DateModifier | None:
+    """Parses the beginning of a string for a possible date modifier.
+
+    Args:
+        date (str): the string containing the date and possible modifier to parse
+    
+    Returns:
+        FlexibleDate.DateModifier | None: the DateModifier or None if not found
+    """
+    normalized_date = date.strip().lower()
+
+    ABOUT_ALIASES = {"about", "abt", "circa", "cir ", "cir.", "ca.", "ca ", "c.", 
+        "late", "early", "approx ", "approx. ", "approximately",
+        "estimated", "cal ", "cal.", "calc ", "calc.",
+        "calculated", "say", "around", "sometime in"}
+    BEFORE_ALIASES = {"before", "bef ", "bef.", "prior", "pre ", "earlier", 
+        "no later than", "not later than", "ante ", "previous to", 
+        "by", "sometime before"}
+    AFTER_ALIASES = {"after", "aft ", "aft.", "following", "later than", 
+        "subsequent to", "since", "post", "not before", "sometime after"}
+
+    modifier = None
+    if any(normalized_date.startswith(alias) for alias in ABOUT_ALIASES):
+        modifier = FlexibleDate.DateModifier.ABOUT
+    if any(normalized_date.startswith(alias) for alias in BEFORE_ALIASES):
+        modifier = FlexibleDate.DateModifier.BEFORE
+    if any(normalized_date.startswith(alias) for alias in AFTER_ALIASES):
+        modifier = FlexibleDate.DateModifier.AFTER
+
+    return modifier
 
 def _choose_most_resonable_value(values: list[Optional[int]]) -> int | None:
     """Chooses the best value. Can compromise for a middle value.
