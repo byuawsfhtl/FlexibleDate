@@ -15,6 +15,7 @@ class FlexibleDate(BaseModel):
     """
 
     class DateModifier(str, Enum):
+        """Enum that defines possible modifiers to the date."""
         ABOUT = "about"
         BEFORE = "before"
         AFTER = "after"
@@ -303,12 +304,13 @@ class FlexibleDate(BaseModel):
         
         Args:
             formal_date (str): an EDTF (Extended Date/Time Format) string such as:
-            - "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
-            - "+1910/+1910" (year range)
-            - "/+1887-03" (open-ended before date range)
-            - "+1976-07-11/" (open-ended after date range)
-            - "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
-            - "A+2014-08" (approximate date)
+
+                - "+1526-01-01T00:00:00Z/+2020-12-31T23:59:59Z" (date range)
+                - "+1910/+1910" (year range)
+                - "/+1887-03" (open-ended before date range)
+                - "+1976-07-11/" (open-ended after date range)
+                - "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z" (date range within year)
+                - "A+2014-08" (approximate date)
         
         Raises:
             ValueError: raised if input is not a valid EDTF (Extended Date/Time Format) string  
@@ -422,17 +424,25 @@ class FlexibleDate(BaseModel):
         return fd
 
 def _get_modifier(date: str) -> FlexibleDate.DateModifier | None:
+    """Parses the beginning of a string for a possible date modifier.
+
+    Args:
+        date (str): the string containing the date and possible modifier to parse
+    
+    Returns:
+        FlexibleDate.DateModifier | None: the DateModifier or None if not found
+    """
     normalized_date = date.strip().lower()
 
     ABOUT_ALIASES = {"about", "abt", "circa", "cir ", "cir.", "ca.", "ca ", "c.", 
-                     "late", "early", "approx ", "approx. ", "approximately",
-                     "estimated", "cal ", "cal.", "calc ", "calc.",
-                     "calculated", "say", "around", "sometime in"}
+        "late", "early", "approx ", "approx. ", "approximately",
+        "estimated", "cal ", "cal.", "calc ", "calc.",
+        "calculated", "say", "around", "sometime in"}
     BEFORE_ALIASES = {"before", "bef ", "bef.", "prior", "pre ", "earlier", 
-                      "no later than", "not later than", "ante ", "previous to", 
-                      "by", "sometime before"}
+        "no later than", "not later than", "ante ", "previous to", 
+        "by", "sometime before"}
     AFTER_ALIASES = {"after", "aft ", "aft.", "following", "later than", 
-                     "subsequent to", "since", "post", "not before", "sometime after"}
+        "subsequent to", "since", "post", "not before", "sometime after"}
 
     modifier = None
     if any(normalized_date.startswith(alias) for alias in ABOUT_ALIASES):
