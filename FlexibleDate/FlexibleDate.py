@@ -159,6 +159,7 @@ class FlexibleDate(BaseModel):
             float | int: the score
         """    
         score = 100
+        ABOUT_SCORE_MODIFIER = 1.2
 
         both_years = self.likely_year and date_to_compare.likely_year
         both_months = self.likely_month and date_to_compare.likely_month
@@ -191,7 +192,12 @@ class FlexibleDate(BaseModel):
                 if diff >= max_diff:
                     return 0
                 scores.append(max(0, 1 - diff / max_diff) * weight)
+
             score = sum(scores) * 100
+            
+            if self.modifier == FlexibleDate.DateModifier.ABOUT or date_to_compare.modifier == FlexibleDate.DateModifier.ABOUT:
+                modified_score = score * ABOUT_SCORE_MODIFIER
+                score = 100 if modified_score > 100 else modified_score
 
         # Return int if whole number, float otherwise
         rounded_score = round(score, 5)
