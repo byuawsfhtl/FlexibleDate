@@ -5,7 +5,7 @@ from FlexibleDate.FlexibleDate import FlexibleDate
 
 runner = PyScriptTestRunner(
     Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
-    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
+    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"], modifier=d["modifier"]),
 )
 
 runner.add_method(FlexibleDate.create_flexible_date, "createFlexibleDate")
@@ -20,42 +20,42 @@ class TestCreateFlexibleDate:
         full_date_cases = [
             {
                 "input": "2023-05-15",
-                "expected": FlexibleDate(likely_day=15, likely_month=5, likely_year=2023),
+                "expected": FlexibleDate(likely_day=15, likely_month=5, likely_year=2023, modifier=None),
                 "description": "ISO format"
             },
             {
                 "input": "January 15, 2020",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "American format with comma"
             },
             {
                 "input": "15 January 2020",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "European format"
             },
             {
                 "input": "2020-01-15",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "ISO format dash separated"
             },
             {
                 "input": "01/15/2020",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "MM/DD/YYYY format"
             },
             {
                 "input": "15/01/2020",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "DD/MM/YYYY format"
             },
             {
                 "input": "Born on March 15, 1990 in New York",
-                "expected": FlexibleDate(likely_day=15, likely_month=3, likely_year=1990),
+                "expected": FlexibleDate(likely_day=15, likely_month=3, likely_year=1990, modifier=None),
                 "description": "date embedded in text"
             },
             {
                 "input": "1990, 1991, or 1992",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1991),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1991, modifier=None),
                 "description": "multiple 4-digit years (tests glean_year_month_day scoring)"
             }
         ]
@@ -80,38 +80,88 @@ class TestCreateFlexibleDate:
         partial_date_cases = [
             {
                 "input": "May 2023",
-                "expected": FlexibleDate(likely_day=None, likely_month=5, likely_year=2023),
+                "expected": FlexibleDate(likely_day=None, likely_month=5, likely_year=2023, modifier=None),
                 "description": "month and year only"
             },
             {
                 "input": "1995",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1995),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1995, modifier=None),
                 "description": "year only"
             },
             {
                 "input": "December",
-                "expected": FlexibleDate(likely_day=None, likely_month=12, likely_year=None),
+                "expected": FlexibleDate(likely_day=None, likely_month=12, likely_year=None, modifier=None),
                 "description": "month only"
             },
             {
                 "input": "December 12",
-                "expected": FlexibleDate(likely_day=12, likely_month=12, likely_year=None),
+                "expected": FlexibleDate(likely_day=12, likely_month=12, likely_year=None, modifier=None),
                 "description": "month and day only"
             },
             {
                 "input": "The event happened sometime in July 2021",
-                "expected": FlexibleDate(likely_day=None, likely_month=7, likely_year=2021),
+                "expected": FlexibleDate(likely_day=None, likely_month=7, likely_year=2021, modifier=None),
                 "description": "month and year in sentence"
             },
             {
                 "input": "circa 1850s",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1850),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1850, modifier=FlexibleDate.DateModifier.ABOUT),
                 "description": "approximate year with text"
             }
         ]
         
         @pytest.mark.parametrize("test_case", partial_date_cases, ids=lambda x: x['description'])
         def test_partial_date_parsing(self, test_case):
+            test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
+            
+            py_result, ts_result = runner.run(
+                "FlexibleDate.create_flexible_date",
+                "createFlexibleDate",
+                test_data
+            )
+            
+            assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
+            assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
+            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+
+    class TestModifiers:
+        """Test parsing of modifiers from beginning of the input."""
+
+        date_with_modifier_cases = [
+            {
+                "input": "about Jan 1, 2020",
+                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=2020, modifier=FlexibleDate.DateModifier.ABOUT),
+                "description": "about with full date"
+            },
+            {
+                "input": "before Jan 1, 2020",
+                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=2020, modifier=FlexibleDate.DateModifier.BEFORE),
+                "description": "before with full date"
+            },
+            {
+                "input": "after Jan 1, 2020",
+                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=2020, modifier=FlexibleDate.DateModifier.AFTER),
+                "description": "after with full date"
+            },
+            {
+                "input": "event occurred after Jan 1, 2020",
+                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=2020, modifier=None),
+                "description": "ignore modifiers not at beginning"
+            },
+            {
+                "input": "presented on Jan 1, 2020",
+                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=2020, modifier=None),
+                "description": "extra text ignored"
+            },
+            {
+                "input": "ESTIMATED Jan 1, 2020",
+                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=2020, modifier=FlexibleDate.DateModifier.ABOUT),
+                "description": "capitalization ignored"
+            }
+        ]
+
+        @pytest.mark.parametrize("test_case", date_with_modifier_cases, ids=lambda x: x['description'])
+        def test_modifier_parsing(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(
@@ -130,17 +180,17 @@ class TestCreateFlexibleDate:
         null_date_cases = [
             {
                 "input": None,
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=None),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=None, modifier=None),
                 "description": "null input"
             },
             {
                 "input": "",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=None),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=None, modifier=None),
                 "description": "empty string"
             },
             {
                 "input": "   ",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=None),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=None, modifier=None),
                 "description": "whitespace only"
             }
         ]
@@ -165,17 +215,17 @@ class TestCreateFlexibleDate:
         invalid_date_cases = [
             {
                 "input": "February 30, 2020",
-                "expected": FlexibleDate(likely_day=None, likely_month=2, likely_year=2020),
+                "expected": FlexibleDate(likely_day=None, likely_month=2, likely_year=2020, modifier=None),
                 "description": "February 31st (invalid) falls back to year-month"
             },
             {
                 "input": "April 31, 2020",
-                "expected": FlexibleDate(likely_day=None, likely_month=4, likely_year=2020),
+                "expected": FlexibleDate(likely_day=None, likely_month=4, likely_year=2020, modifier=None),
                 "description": "April 31st (invalid) falls back to year-month"
             },
             {
                 "input": "June 31, 2020",
-                "expected": FlexibleDate(likely_day=None, likely_month=6, likely_year=2020),
+                "expected": FlexibleDate(likely_day=None, likely_month=6, likely_year=2020, modifier=None),
                 "description": "June 31st (invalid) falls back to year-month"
             }
         ]
@@ -204,34 +254,44 @@ class TestCreateFlexibleDateFromFormalDate:
         full_edtf_cases = [
             {
                 "input": "2020-01-15",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "simple EDTF date"
             },
             {
                 "input": "+2020-01-15",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "EDTF with plus prefix"
             },
             {
                 "input": "2020-01-01/2020-12-31",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=2020),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=2020, modifier=None),
                 "description": "date range within year"
             },
             {
                 "input": "+1526-01-01/+2020-12-31",
-                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=1526),
+                "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=1526, modifier=None),
                 "description": "long date range with plus"
             },
             {
                 "input": "2020-01-15T10:30:00Z",
-                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020),
+                "expected": FlexibleDate(likely_day=15, likely_month=1, likely_year=2020, modifier=None),
                 "description": "EDTF with time and timezone"
             },
             {
                 "input": "+1910-01-01T00:00:00Z/+1910-12-31T23:59:59Z",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910, modifier=None),
                 "description": "datetime range"
-            }
+            },
+            {
+                "input": "+1933-02-19/P74Y",
+                "expected": FlexibleDate(likely_day=19, likely_month=2, likely_year=1933, modifier=None),
+                "description": "date with duration"
+            },
+            {
+                "input": "R4/+1776-04-02/+1776-04-09",
+                "expected": FlexibleDate(likely_day=2, likely_month=4, likely_year=1776, modifier=None),
+                "description": "long date range with plus and recurring information"
+            },
         ]
         
         @pytest.mark.parametrize("test_case", full_edtf_cases, ids=lambda x: x['description'])
@@ -254,38 +314,98 @@ class TestCreateFlexibleDateFromFormalDate:
         partial_edtf_cases = [
             {
                 "input": "1945",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945, modifier=None),
                 "description": "year only EDTF"
             },
             {
                 "input": "1945-05",
-                "expected": FlexibleDate(likely_day=None, likely_month=5, likely_year=1945),
+                "expected": FlexibleDate(likely_day=None, likely_month=5, likely_year=1945, modifier=None),
                 "description": "year-month EDTF"
             },
             {
                 "input": "1910/1920",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1910, modifier=None),
                 "description": "year range"
             },
             {
                 "input": "+1945",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1945, modifier=None),
                 "description": "year only with plus prefix"
             },
             {
-                "input": "A+1850",
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1850),
-                "description": "year only with plus prefix and text"
+                "input": "+1933/P74Y",
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1933, modifier=None),
+                "description": "year only with plus prefix and duration"
             },
             {
                 "input": '+1953-01/+1953-12',
-                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1953),
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1953, modifier=None),
                 "description": "full year as month range"
-            }
+            },
+            {
+                "input": "R/+2000/P12Y",
+                "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=2000, modifier=None),
+                "description": "year only with recurring and duration information"
+            },
         ]
         
         @pytest.mark.parametrize("test_case", partial_edtf_cases, ids=lambda x: x['description'])
         def test_partial_edtf_parsing(self, test_case):
+            test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
+            
+            py_result, ts_result = runner.run(
+                "FlexibleDate.create_flexible_date_from_formal_date",
+                "createFlexibleDateFromFormalDate",
+                test_data
+            )
+            
+            assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
+            assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
+            runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+
+    class TestModifiers:
+        """Test EDTF parsing of dates with modifiers."""
+
+        edtf_with_modifier_cases = [
+        {
+            "input": "+1976-07-11/",
+            "expected": FlexibleDate(likely_day=11, likely_month=7, likely_year=1976, modifier=FlexibleDate.DateModifier.AFTER),
+            "description": "date with after date range"
+        },
+        {
+            "input": "/+1887-03-12",
+            "expected": FlexibleDate(likely_day=12, likely_month=3, likely_year=1887, modifier=FlexibleDate.DateModifier.BEFORE),
+            "description": "date with before date range"
+        },
+        {
+            "input": "A+1850",
+            "expected": FlexibleDate(likely_day=None, likely_month=None, likely_year=1850, modifier=FlexibleDate.DateModifier.ABOUT),
+            "description": "year only with plus and about prefixes"
+        },
+        {
+            "input": "A-1850-01-01",
+            "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=-1850, modifier=FlexibleDate.DateModifier.ABOUT),
+            "description": "full date with minus and about prefixes"
+        },
+        {
+            "input": "A/1850-01-01",
+            "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=1850, modifier=FlexibleDate.DateModifier.BEFORE),
+            "description": "before overrides about"
+        },
+        {
+            "input": "A1850-01-01/",
+            "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=1850, modifier=FlexibleDate.DateModifier.AFTER),
+            "description": "after overrides about"
+        },
+        {
+            "input": "+1526-01-01/+2020-12-31",
+            "expected": FlexibleDate(likely_day=1, likely_month=1, likely_year=1526, modifier=None),
+            "description": "date range not given modifier"
+        },
+        ]
+
+        @pytest.mark.parametrize("test_case", edtf_with_modifier_cases, ids=lambda x: x['description'])
+        def test_edtf_modifier_parsing(self, test_case):
             test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
             py_result, ts_result = runner.run(

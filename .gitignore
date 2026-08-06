@@ -9,3 +9,5 @@ FlexibleDate.egg-info/
 FlexibleDateTS/node_modules/
 FlexibleDateTS/dist/
 build
+.venv
+.pytest_cache

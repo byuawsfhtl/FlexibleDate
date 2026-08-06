@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import FlexibleDate from './FlexibleDateTS';
 import { PyScriptTestBridge } from 'pyscripttestutils';
 
@@ -9,6 +7,7 @@ function serializeFlexibleDate(fd: FlexibleDate): any {
             likelyYear: fd.likelyYear,
             likelyMonth: fd.likelyMonth,
             likelyDay: fd.likelyDay,
+            modifier: fd.modifier ?? null
         };
     }
     return fd;
@@ -18,6 +17,9 @@ function deserializeFlexibleDate(data: any): FlexibleDate {
     if ("likelyDay" in data &&
         "likelyMonth" in data &&
         "likelyYear" in data) {
+        if ("modifier" in data) {
+            return new FlexibleDate(data.likelyDay, data.likelyMonth, data.likelyYear, data.modifier);
+        }
         return new FlexibleDate(data.likelyDay, data.likelyMonth, data.likelyYear);
     }
     return data;

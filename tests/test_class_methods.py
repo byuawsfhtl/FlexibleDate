@@ -5,7 +5,7 @@ from pyscripttestutils import PyScriptTestRunner
 
 runner = PyScriptTestRunner(
     Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
-    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
+    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"], modifier=d.get("modifier")),
 )
 
 runner.add_method(FlexibleDate.__bool__, "FlexibleDate.valueOf", executor=lambda d: bool(d))
@@ -167,6 +167,36 @@ class TestStrMethod:
             "input": {"likelyYear": 2020, "likelyMonth": 12, "likelyDay": None},
             "expected": "Dec 2020",
             "description": "December abbreviation"
+        },
+        {
+            "input": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.ABOUT},
+            "expected": "about 15 May 2020",
+            "description": "full date with about"
+        },
+        {
+            "input": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.BEFORE},
+            "expected": "before 15 May 2020",
+            "description": "full date with before"
+        },
+        {
+            "input": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.AFTER},
+            "expected": "after 15 May 2020",
+            "description": "full date with after"
+        },
+        {
+            "input": {"likelyYear": None, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
+            "expected": "about",
+            "description": "null date with about modifier"
+        },
+        {
+            "input": {"likelyYear": None, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.BEFORE},
+            "expected": "before",
+            "description": "null date with before modifier"
+        },
+        {
+            "input": {"likelyYear": None, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.AFTER},
+            "expected": "after",
+            "description": "null date with after modifier"
         }
     ]
     
@@ -243,6 +273,36 @@ class TestReprMethod:
             "input": {"likelyYear": None, "likelyMonth": 5, "likelyDay": None},
             "expected": "XXXX-05",
             "description": "month only (no year, no day)"
+        },
+        {
+            "input": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.ABOUT},
+            "expected": "A+2020-05-15",
+            "description": "full date with about"
+        },
+        {
+            "input": {"likelyYear": -500, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
+            "expected": "A-0500",
+            "description": "BC date (negative year) with about"
+        },
+        {
+            "input": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.BEFORE},
+            "expected": "/+2020-05-15",
+            "description": "full date with before"
+        },
+        {
+            "input": {"likelyYear": -500, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.BEFORE},
+            "expected": "/-0500",
+            "description": "BC date (negative year) with before"
+        },
+        {
+            "input": {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.AFTER},
+            "expected": "+2020-05-15/",
+            "description": "full date with after"
+        },
+        {
+            "input": {"likelyYear": -500, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.AFTER},
+            "expected": "-0500/",
+            "description": "BC date (negative year) with after"
         }
     ]
     
@@ -303,6 +363,46 @@ class TestEqualsMethod:
             ],
             "expected": False,
             "description": "dates with partial matches return False"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.ABOUT},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.ABOUT}
+            ],
+            "expected": True,
+            "description": "two identical dates with about modifiers return True"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.BEFORE},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.BEFORE}
+            ],
+            "expected": True,
+            "description": "two identical dates with before modifiers return True"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.AFTER},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.AFTER}
+            ],
+            "expected": True,
+            "description": "two identical dates with after modifiers return True"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.ABOUT},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15}
+            ],
+            "expected": False,
+            "description": "two otherwise identical dates with only one modifier return False"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.BEFORE},
+                {"likelyYear": 2020, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.AFTER}
+            ],
+            "expected": False,
+            "description": "identical dates with different modifiers return False"
         }
     ]
     
