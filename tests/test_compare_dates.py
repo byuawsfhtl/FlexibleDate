@@ -5,7 +5,7 @@ from FlexibleDate.FlexibleDate import FlexibleDate
 
 runner = PyScriptTestRunner(
     Path(__file__).resolve().parent.parent / "FlexibleDateTS" / "dist" / "test_bridge.js",
-    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"]),
+    deserializer = lambda d: FlexibleDate(likely_day=d["likelyDay"], likely_month=d["likelyMonth"], likely_year=d["likelyYear"], modifier=d.get("modifier")),
 )
 
 runner.add_method(FlexibleDate.compare_dates, "compareDates", executor=lambda d: d[0].compare_dates(d[1]))
@@ -407,6 +407,98 @@ class TestBadDates:
 
     @pytest.mark.parametrize("test_case", very_different_dates_cases, ids=lambda x: x['description'])
     def test_very_different_dates_cases(self, test_case):
+        test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
+            
+        py_result, ts_result = runner.run(
+            "FlexibleDate.compare_dates",
+            "compareDates",
+            test_data
+        )
+        
+        assert py_result == test_case["expected"], f"Python failed for {test_case['description']}"
+        assert ts_result == test_case["expected"], f"TypeScript failed for {test_case['description']}"
+        runner.assert_strict_parity(py_result, ts_result, test_case['description'])
+
+class TestModifiedDates:
+    """Test modified dates return expected score (score * 1.2 if DateModifier.ABOUT)."""
+
+    modified_cases = [
+        {
+            "input": [
+                {"likelyYear": 2000, "likelyMonth": 1, "likelyDay": 1, "modifier": FlexibleDate.DateModifier.ABOUT},
+                {"likelyYear": 2000, "likelyMonth": 1, "likelyDay": 1}
+            ],
+            "expected": 100,
+            "description": "same dates with about modifier returns 100"
+        },
+        {
+            "input": [
+                {"likelyYear": 1800, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
+                {"likelyYear": 1900, "likelyMonth": None, "likelyDay": None}
+            ],
+            "expected": 0,
+            "description": "100 year difference with about modifier returns 0"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
+                {"likelyYear": 2025, "likelyMonth": 5, "likelyDay": 15}
+            ],
+            "expected": 75 * FlexibleDate.ABOUT_SCORE_MODIFIER,
+            "description": "year-only vs full date (5 year diff) with about modifier returns 90 (75*1.2)"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2025, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.ABOUT}
+            ],
+            "expected": 75 * FlexibleDate.ABOUT_SCORE_MODIFIER,
+            "description": "about modifier in either input gives same result"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
+                {"likelyYear": 2025, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.ABOUT}
+            ],
+            "expected": 75 * FlexibleDate.ABOUT_SCORE_MODIFIER,
+            "description": "two about modifiers behave the same as one"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
+                {"likelyYear": 2025, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.BEFORE}
+            ],
+            "expected": 75 * FlexibleDate.ABOUT_SCORE_MODIFIER,
+            "description": "Before modifier doesn't affect about score"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None, "modifier": FlexibleDate.DateModifier.ABOUT},
+                {"likelyYear": 2025, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.AFTER}
+            ],
+            "expected": 75 * FlexibleDate.ABOUT_SCORE_MODIFIER,
+            "description": "After modifier doesn't affect about score"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2025, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.AFTER}
+            ],
+            "expected": 75,
+            "description": "After modifier doesn't affect base score"
+        },
+        {
+            "input": [
+                {"likelyYear": 2020, "likelyMonth": None, "likelyDay": None},
+                {"likelyYear": 2025, "likelyMonth": 5, "likelyDay": 15, "modifier": FlexibleDate.DateModifier.BEFORE}
+            ],
+            "expected": 75,
+            "description": "Before modifier doesn't affect base score"
+        }
+    ]
+
+    @pytest.mark.parametrize("test_case", modified_cases, ids=lambda x: x['description'])
+    def test_modified_cases(self, test_case):
         test_data = {"input": test_case["input"], "expected": test_case["expected"], "mocks": {}}
             
         py_result, ts_result = runner.run(
